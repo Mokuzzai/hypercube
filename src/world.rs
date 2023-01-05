@@ -1,71 +1,79 @@
-/*
-use crate::*;
+use std::cmp::Ordering;
+use std::collections::BTreeMap;
+use std::ops::Deref;
+use std::ops::DerefMut;
 
-use std::collections::BTreeMap as Map;
+use nalgebra::Point;
+use nalgebra::Scalar;
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
-pub struct OrderedChunkCoordinate {
-	z: i32,
-	y: i32,
-	x: i32,
+use bytemuck::Pod;
+use bytemuck::Zeroable;
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Pod, Zeroable)]
+#[repr(transparent)]
+pub struct ChunkPosition<T, const D: usize> {
+	pub coordinates: [T; D],
 }
 
-impl From<ChunkCoordinate> for OrderedChunkCoordinate {
-	fn from(position: ChunkCoordinate) -> Self {
+impl<T: Pod + Scalar, const D: usize> Deref for ChunkPosition<T, D> {
+	type Target = Point<T, D>;
+
+	fn deref(&self) -> &Self::Target {
+		bytemuck::cast_ref(self)
+	}
+}
+
+impl<T: Pod + Scalar, const D: usize> DerefMut for ChunkPosition<T, D> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		bytemuck::cast_mut(self)
+	}
+}
+
+impl<T: PartialOrd, const D: usize> PartialOrd for ChunkPosition<T, D> {
+	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+		self.coordinates
+			.iter()
+			.rev()
+			.zip(other.coordinates.iter().rev())
+			.try_fold(Ordering::Equal, |acc, (a, b)| {
+				Some(acc.then(a.partial_cmp(b)?))
+			})
+	}
+}
+
+impl<T: Ord, const D: usize> Ord for ChunkPosition<T, D> {
+	fn cmp(&self, other: &Self) -> Ordering {
+		self.coordinates
+			.iter()
+			.rev()
+			.zip(other.coordinates.iter().rev())
+			.fold(Ordering::Equal, |acc, (a, b)| acc.then(a.cmp(b)))
+	}
+}
+
+impl<T: Default, const D: usize> Default for ChunkPosition<T, D> {
+	fn default() -> Self {
 		Self {
-			z: position.z,
-			y: position.y,
-			x: position.y,
+			coordinates: std::array::from_fn(|_| T::default()),
 		}
 	}
 }
 
-pub struct World {
-	chunks: Map<OrderedChunkCoordinate, Chunk>,
+#[derive(Default)]
+pub struct World<Cc, C, const D: usize> {
+	chunks: BTreeMap<ChunkPosition<Cc, D>, C>,
 }
 
-/// Chunk manipulation
-impl World {
-	pub fn chunk(&self, position: ChunkCoordinate) -> Option<&Chunk> {
-		self.chunks.get(&OrderedChunkCoordinate::from(position))
-	}
-	pub fn chunk_mut(&mut self, position: ChunkCoordinate) -> Option<&mut Chunk> {
-		self.chunks.get_mut(&OrderedChunkCoordinate::from(position))
-	}
-	pub fn chunk_or_insert(
-		&mut self,
-		position: ChunkCoordinate,
-		chunk: impl FnOnce() -> Chunk,
-	) -> &mut Chunk {
-		self.chunks
-			.entry(OrderedChunkCoordinate::from(position))
-			.or_insert_with(chunk)
-	}
-	pub fn chunks(&self) -> impl Iterator<Item = &Chunk> {
-		self.chunks.values()
-	}
-	pub fn chunks_mut(&mut self) -> impl Iterator<Item = &mut Chunk> {
-		self.chunks.values_mut()
+impl<Cc: Ord, C, const D: usize> Deref for World<Cc, C, D> {
+	type Target = BTreeMap<ChunkPosition<Cc, D>, C>;
+
+	fn deref(&self) -> &Self::Target {
+		&self.chunks
 	}
 }
 
-/// Block manipulation
-impl World {
-	pub fn block(&self, position: WorldCoordinate) -> Option<&Block> {
-		Some(self.chunk(*position.chunk())?.get(*position.block()))
+impl<Cc: Ord, C, const D: usize> DerefMut for World<Cc, C, D> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.chunks
 	}
-	pub fn block_mut(&mut self, position: WorldCoordinate) -> Option<&mut Block> {
-		Some(
-			self.chunk_mut(*position.chunk())?
-				.get_mut(*position.block()),
-		)
-	}
-
-	// FIXME: when ever would you iterate over all the blocks?
-	// pub fn blocks(&self) -> impl Iterator<Item = &T> {
-	// 	self.chunks().flat_map(Chunk::blocks)
-	// }
-	// pub fn blocks_mut(&mut self) -> impl Iterator<Item = &mut T> {
-	// 	self.chunks_mut().flat_map(Chunk::blocks_mut)
-	// }
-}*/
+}
