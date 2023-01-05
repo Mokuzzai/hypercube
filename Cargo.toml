@@ -6,4 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+bytemuck = { version = "1.12.3", features = ["derive", "min_const_generics"] }
+nalgebra = { version = "0.31.4", features = ["bytemuck"] }
 thiserror = "1.0.38"
