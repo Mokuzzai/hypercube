@@ -7,6 +7,7 @@ pub mod chunk16d2 {
 
 	impl<T> crate::chunk::Chunk<S, D, C> for Chunk16d2<T> {
 		type Item = T;
+		type Coordinate = u8;
 
 		fn array(&self) -> &[Self::Item; C] {
 			&self.0
@@ -27,6 +28,7 @@ pub mod chunk32d2 {
 
 	impl<T> crate::chunk::Chunk<S, D, C> for Chunk32d2<T> {
 		type Item = T;
+		type Coordinate = u8;
 
 		fn array(&self) -> &[Self::Item; C] {
 			&self.0
@@ -47,6 +49,7 @@ pub mod chunk16d3 {
 
 	impl<T> crate::chunk::Chunk<S, D, C> for Chunk16d3<T> {
 		type Item = T;
+		type Coordinate = u8;
 
 		fn array(&self) -> &[Self::Item; C] {
 			&self.0
@@ -67,6 +70,7 @@ pub mod chunk32d3 {
 
 	impl<T> crate::chunk::Chunk<S, D, C> for Chunk32d3<T> {
 		type Item = T;
+		type Coordinate = u8;
 
 		fn array(&self) -> &[Self::Item; C] {
 			&self.0
