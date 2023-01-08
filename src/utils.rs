@@ -3,14 +3,14 @@ pub struct Range<const END: usize> {
 }
 
 impl<const END: usize> Range<END> {
-	pub const END: usize = END;
+	// pub const END: usize = END;
 
 	pub fn new(start: usize) -> Self {
 		Self { start }
 	}
-	pub fn end(&self) -> usize {
-		Self::END
-	}
+	// pub fn end(&self) -> usize {
+	// 	Self::END
+	// }
 }
 
 impl<const END: usize> Iterator for Range<END> {

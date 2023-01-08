@@ -1,63 +1,68 @@
-mod imp;
 
-pub use imp::chunk16d2::Chunk16d2;
-pub use imp::chunk16d3::Chunk16d3;
-pub use imp::chunk32d2::Chunk32d2;
-pub use imp::chunk32d3::Chunk32d3;
+
+pub type Chunk16d2<T> = Chunk<T, u8, 16, 2, { 16 * 16 }>;
+pub type Chunk16d3<T> = Chunk<T, u8, 16, 3, { 16 * 16 * 16 }>;
+pub type Chunk32d2<T> = Chunk<T, u8, 32, 2, { 32 * 32 }>;
+pub type Chunk32d3<T> = Chunk<T, u8, 32, 3, { 32 * 32 * 32}>;
 
 use crate::Positions;
 
 use crate::Coordinate;
 use crate::SubChunkPosition;
 
-pub trait Chunk<const S: usize, const D: usize, const C: usize> {
-	type Item;
+use std::marker::PhantomData;
 
-	type Coordinate: Coordinate;
+pub struct Chunk<T, U: Coordinate, const S: usize, const D: usize, const C: usize> {
+	inner: [T; C],
+	_coord: PhantomData<U>,
+}
 
-	fn stride(&self) -> usize {
+
+impl<T, U: Coordinate, const S: usize, const D: usize, const C: usize> Chunk<T, U, S, D, C> {
+	pub const STRIDE: usize = S;
+	pub const DIMENSIONS: usize = D;
+	pub const CAPACITY: usize = C;
+
+	pub fn stride(&self) -> usize {
 		S
 	}
 
-	fn dimensions(&self) -> usize {
+	pub fn dimensions(&self) -> usize {
 		D
 	}
 
-	fn capacity(&self) -> usize {
+	pub fn capacity(&self) -> usize {
 		C
 	}
 
-	fn array(&self) -> &[Self::Item; C];
-	fn array_mut(&mut self) -> &mut [Self::Item; C];
-
-	fn get(&mut self, position: SubChunkPosition<Self::Coordinate, D>) -> Option<&Self::Item> {
-		self.array().get(position.to_index(S)?)
+	pub fn get(&mut self, position: SubChunkPosition<U, D>) -> Option<&T> {
+		self.inner.get(position.to_index(S)?)
 	}
 
-	fn get_mut(
+	pub fn get_mut(
 		&mut self,
-		position: SubChunkPosition<Self::Coordinate, D>,
-	) -> Option<&mut Self::Item> {
-		self.array_mut().get_mut(position.to_index(S)?)
+		position: SubChunkPosition<U, D>,
+	) -> Option<&mut T> {
+		self.inner.get_mut(position.to_index(S)?)
 	}
 
-	fn into_iter(self) -> IntoIter<Self::Item, Self::Coordinate, S, D, C>
-	where
-		Self: Sized,
-	{
-		unimplemented!()
-	}
-
-	fn iter(&self) -> Iter<Self::Item, Self::Coordinate, S, D, C> {
-		Iter {
-			values: self.array().iter(),
+	pub fn into_iter(self) -> IntoIter<T, U, S, D, C> {
+		IntoIter {
+			values: self.inner.into_iter(),
 			positions: Positions::new(),
 		}
 	}
 
-	fn iter_mut(&mut self) -> IterMut<Self::Item, Self::Coordinate, S, D, C> {
+	pub fn iter(&self) -> Iter<T, U, S, D, C> {
+		Iter {
+			values: self.inner.iter(),
+			positions: Positions::new(),
+		}
+	}
+
+	pub fn iter_mut(&mut self) -> IterMut<T, U, S, D, C> {
 		IterMut {
-			values: self.array_mut().iter_mut(),
+			values: self.inner.iter_mut(),
 			positions: Positions::new(),
 		}
 	}
