@@ -10,6 +10,10 @@ pub use chunk::Chunk32d2;
 pub use chunk::Chunk32d3;
 
 pub use world::World;
+pub use world::World16d2;
+pub use world::World16d3;
+pub use world::World32d2;
+pub use world::World32d3;
 
 pub use position::BlockPosition;
 pub use position::ChunkPosition;

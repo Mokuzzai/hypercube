@@ -2,22 +2,43 @@ use crate::utils::Range;
 
 use std::cmp::Ordering;
 
-use nalgebra::OVector as Vector;
+type Vector<T, const N: usize> = nalgebra::OVector::<T, nalgebra::base::dimension::Const<N>>;
+
 use nalgebra::Point;
 
-pub trait Coordinate: nalgebra::Scalar + num::Num + simba::scalar::SubsetOf<usize> {}
+pub trait Coordinate: nalgebra::Scalar + num::Num + simba::scalar::SubsetOf<usize> + simba::scalar::SubsetOf<i32> {}
 
-impl<T: nalgebra::Scalar + num::Num + simba::scalar::SubsetOf<usize>> Coordinate for T {}
+impl<T: nalgebra::Scalar + num::Num + simba::scalar::SubsetOf<usize> + simba::scalar::SubsetOf<i32>> Coordinate for T {}
 
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct BlockPosition<
-	Scc: Coordinate,
 	Cc: Coordinate,
+	Scc: Coordinate,
 	const CHUNK_DIMENSIONS: usize,
 	const WORLD_DIMENSIONS: usize,
 > {
-	pub sub_chunk: SubChunkPosition<Scc, CHUNK_DIMENSIONS>,
 	pub chunk: ChunkPosition<Cc, WORLD_DIMENSIONS>,
+	pub sub_chunk: SubChunkPosition<Scc, CHUNK_DIMENSIONS>,
+}
+
+impl<
+		Cc: Coordinate,
+		Scc: Coordinate,
+		const CHUNK_DIMENSIONS: usize,
+		const WORLD_DIMENSIONS: usize,
+	> BlockPosition<Cc, Scc, CHUNK_DIMENSIONS, WORLD_DIMENSIONS>
+{
+	pub fn position<const N: usize>(&self) -> Point<i32, N> {
+		assert!(CHUNK_DIMENSIONS >= N);
+		assert!(WORLD_DIMENSIONS >= N);
+
+		let chunk: Vector<i32, N> = self.chunk.coordinates.coords.clone().cast::<i32>().fixed_resize(0);
+		let sub_chunk: Vector<i32, N> = self.sub_chunk.coordinates.coords.clone().cast::<i32>().fixed_resize(0);
+
+		let vector: Vector<i32, N> = chunk + sub_chunk * CHUNK_DIMENSIONS as i32;
+
+		Point::from(vector)
+	}
 }
 
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
@@ -61,7 +82,7 @@ impl<T: Coordinate, const D: usize> SubChunkPosition<T, D> {
 			.map(|array| {
 				Some(Self {
 					coordinates: Point::from(
-						Vector::<usize, nalgebra::base::dimension::Const<D>>::from(array)
+						Vector::<usize, D>::from(array)
 							.try_cast::<T>()?,
 					),
 				})

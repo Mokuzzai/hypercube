@@ -1,9 +1,7 @@
-
-
-pub type Chunk16d2<T> = Chunk<T, u8, 16, 2, { 16 * 16 }>;
-pub type Chunk16d3<T> = Chunk<T, u8, 16, 3, { 16 * 16 * 16 }>;
-pub type Chunk32d2<T> = Chunk<T, u8, 32, 2, { 32 * 32 }>;
-pub type Chunk32d3<T> = Chunk<T, u8, 32, 3, { 32 * 32 * 32}>;
+pub type Chunk16d2<T> = Chunk<T, u8, 16, 2, 256>;
+pub type Chunk16d3<T> = Chunk<T, u8, 16, 3, 4096>;
+pub type Chunk32d2<T> = Chunk<T, u8, 32, 2, 1024>;
+pub type Chunk32d3<T> = Chunk<T, u8, 32, 3, 32768>;
 
 use crate::Positions;
 
@@ -11,12 +9,43 @@ use crate::Coordinate;
 use crate::SubChunkPosition;
 
 use std::marker::PhantomData;
+use std::mem::MaybeUninit;
 
 pub struct Chunk<T, U: Coordinate, const S: usize, const D: usize, const C: usize> {
 	inner: [T; C],
 	_coord: PhantomData<U>,
 }
 
+/// # Constructors
+///
+/// ## Panics
+/// All constructors panic if the following conditions are not met:
+/// * `S.pow(D as u32) == C`
+/// * `D < u32::MAX`
+impl<T, U: Coordinate, const S: usize, const D: usize, const C: usize> Chunk<T, U, S, D, C> {
+	pub fn from_array(inner: [T; C]) -> Self {
+		assert!(S.pow(D as u32) == C);
+		assert!(D < u32::MAX as usize);
+
+		Self {
+			inner,
+			_coord: PhantomData,
+		}
+	}
+
+	pub fn from_fn(mut f: impl FnMut(SubChunkPosition<U, D>) -> T) -> Self {
+		let mut positions = Positions::<U, S, D, C>::new();
+
+		Self::from_array(std::array::from_fn(|_| f(positions.next().unwrap())))
+	}
+
+	pub fn new_uninit() -> Chunk<MaybeUninit<T>, U, S, D, C> {
+		// SAFETY: An uninitialized `[MaybeUninit<_>; C]` is valid.
+		let array = unsafe { MaybeUninit::<[MaybeUninit<T>; C]>::uninit().assume_init() };
+
+		Chunk::from_array(array)
+	}
+}
 
 impl<T, U: Coordinate, const S: usize, const D: usize, const C: usize> Chunk<T, U, S, D, C> {
 	pub const STRIDE: usize = S;
@@ -35,14 +64,11 @@ impl<T, U: Coordinate, const S: usize, const D: usize, const C: usize> Chunk<T, 
 		C
 	}
 
-	pub fn get(&mut self, position: SubChunkPosition<U, D>) -> Option<&T> {
+	pub fn get(&self, position: SubChunkPosition<U, D>) -> Option<&T> {
 		self.inner.get(position.to_index(S)?)
 	}
 
-	pub fn get_mut(
-		&mut self,
-		position: SubChunkPosition<U, D>,
-	) -> Option<&mut T> {
+	pub fn get_mut(&mut self, position: SubChunkPosition<U, D>) -> Option<&mut T> {
 		self.inner.get_mut(position.to_index(S)?)
 	}
 
@@ -65,6 +91,20 @@ impl<T, U: Coordinate, const S: usize, const D: usize, const C: usize> Chunk<T, 
 			values: self.inner.iter_mut(),
 			positions: Positions::new(),
 		}
+	}
+}
+
+impl<T, U: Coordinate, const S: usize, const D: usize, const C: usize>
+	Chunk<MaybeUninit<T>, U, S, D, C>
+{
+	/// # Safety
+	/// It is up to the caller to ensure that `Self` is initialized fully
+	pub unsafe fn assume_init(self) -> Chunk<T, U, S, D, C> {
+		let forget = std::mem::ManuallyDrop::new(self);
+
+		let array = std::ptr::addr_of!(forget.inner).cast::<[T; C]>().read();
+
+		Chunk::from_array(array)
 	}
 }
 
