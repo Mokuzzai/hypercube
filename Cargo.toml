@@ -8,4 +8,6 @@ edition = "2021"
 [dependencies]
 bytemuck = { version = "1.12.3", features = ["derive", "min_const_generics"] }
 nalgebra = { version = "0.31.4", features = ["bytemuck"] }
+num = "0.4.0"
+simba = "0.7.3"
 thiserror = "1.0.38"
