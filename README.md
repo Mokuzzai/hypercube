@@ -1,9 +1,9 @@
 # hypercubes
 
 ## Todo
-[] Add payload to chunk
+[] Add payload to chunk  
 [] Add documentation
 
 ### Todo but far in the future
-[] Reduce the amout of generics (..)
+[] Reduce the amout of generics (..)  
 [] Add support for non cubic chunks
