@@ -1,2 +1,2 @@
-pub mod cubic;
-pub mod no_cubic;
+pub mod uniform;
+pub mod multiform;
