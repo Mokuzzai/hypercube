@@ -1,7 +1,7 @@
 use crate::na;
 
-use crate::Shape;
 use crate::SVector;
+use crate::Shape;
 
 use crate::Chunk;
 
@@ -20,7 +20,3 @@ where
 {
 	chunks: std::collections::BTreeMap<SVector<S>, C>,
 }
-
-
-
-

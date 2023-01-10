@@ -1,4 +1,4 @@
-# hypercubes
+# Hypercube
 
 ## Todo
 [x] Add payload to chunk\

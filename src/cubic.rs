@@ -34,6 +34,3 @@ crate::cubic_chunk! { pub CubicChunk2x16[16; 2], CubicWorld2x16 }
 crate::cubic_chunk! { pub CubicChunk3x16[16; 3], CubicWorld3x16 }
 crate::cubic_chunk! { pub CubicChunk2x32[32; 2], CubicWorld2x32 }
 crate::cubic_chunk! { pub CubicChunk3x32[32; 3], CubicWorld3x32 }
-
-
-

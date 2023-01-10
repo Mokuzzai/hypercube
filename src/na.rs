@@ -1,6 +1,5 @@
-
-pub use nalgebra::Dim;
 pub use nalgebra::allocator::Allocator;
+pub use nalgebra::Dim;
 
 pub use nalgebra::DefaultAllocator;
 pub use nalgebra::OVector;
@@ -16,4 +15,3 @@ pub fn vtoa<T: Scalar, const D: usize>(v: OVector<T, Const<D>>) -> [T; D] {
 pub fn atov<T: Scalar, const D: usize>(a: [T; D]) -> OVector<T, Const<D>> {
 	a.into()
 }
-

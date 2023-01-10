@@ -1,8 +1,7 @@
-
-use crate::IndexableShape;
-use crate::Shape;
-use crate::SVector;
 use crate::na;
+use crate::IndexableShape;
+use crate::SVector;
+use crate::Shape;
 
 /// [`na::OVector`] used to index [`Chunk`]
 pub type CVector<C> = SVector<<C as Chunk>::Shape>;
@@ -18,7 +17,8 @@ pub trait Chunk {
 
 	fn get(&self, position: CVector<Self>) -> Option<&Self::Item>
 	where
-		na::DefaultAllocator: na::Allocator<<Self::Shape as Shape>::Coordinate, <Self::Shape as Shape>::Dimension>
+		na::DefaultAllocator:
+			na::Allocator<<Self::Shape as Shape>::Coordinate, <Self::Shape as Shape>::Dimension>,
 	{
 		let index = self.shape().position_to_index(position)?;
 
@@ -27,7 +27,8 @@ pub trait Chunk {
 
 	fn get_mut(&mut self, position: CVector<Self>) -> Option<&mut Self::Item>
 	where
-		na::DefaultAllocator: na::Allocator<<Self::Shape as Shape>::Coordinate, <Self::Shape as Shape>::Dimension>
+		na::DefaultAllocator:
+			na::Allocator<<Self::Shape as Shape>::Coordinate, <Self::Shape as Shape>::Dimension>,
 	{
 		let index = self.shape().position_to_index(position)?;
 
@@ -60,14 +61,16 @@ impl<C: Chunk, P> Chunk for ChunkExt<C, P> {
 
 	fn get(&self, position: CVector<Self>) -> Option<&Self::Item>
 	where
-		na::DefaultAllocator: na::Allocator<<Self::Shape as Shape>::Coordinate, <Self::Shape as Shape>::Dimension>
+		na::DefaultAllocator:
+			na::Allocator<<Self::Shape as Shape>::Coordinate, <Self::Shape as Shape>::Dimension>,
 	{
 		self.chunk.get(position)
 	}
 
 	fn get_mut(&mut self, position: CVector<Self>) -> Option<&mut Self::Item>
 	where
-		na::DefaultAllocator: na::Allocator<<Self::Shape as Shape>::Coordinate, <Self::Shape as Shape>::Dimension>
+		na::DefaultAllocator:
+			na::Allocator<<Self::Shape as Shape>::Coordinate, <Self::Shape as Shape>::Dimension>,
 	{
 		self.chunk.get_mut(position)
 	}

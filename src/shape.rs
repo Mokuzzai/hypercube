@@ -1,4 +1,3 @@
-
 use crate::na;
 
 pub trait Shape {
@@ -7,6 +6,8 @@ pub trait Shape {
 }
 
 pub trait IndexableShape: Shape {
+	fn capacity(&self) -> usize;
+
 	fn position_to_index(&self, position: SVector<Self>) -> Option<usize>
 	where
 		na::DefaultAllocator: na::Allocator<Self::Coordinate, Self::Dimension>;
@@ -28,30 +29,39 @@ impl<const S: usize, const D: usize> Shape for Cube<S, D> {
 }
 
 impl<const S: usize, const D: usize> IndexableShape for Cube<S, D> {
+	fn capacity(&self) -> usize {
+		S.pow(D as u32)
+	}
+
 	fn position_to_index(&self, position: SVector<Self>) -> Option<usize>
 	where
-		na::DefaultAllocator: na::Allocator<Self::Coordinate, Self::Dimension>
+		na::DefaultAllocator: na::Allocator<Self::Coordinate, Self::Dimension>,
 	{
-
-		crate::position_index_conversion::cubic::position_to_index(S, na::vtoa(position).map(Into::into))
+		crate::position_index_conversion::cubic::position_to_index(
+			S,
+			na::vtoa(position).map(Into::into),
+		)
 	}
 	fn index_to_position(&self, index: usize) -> Option<SVector<Self>>
 	where
-		na::DefaultAllocator: na::Allocator<Self::Coordinate, Self::Dimension>
+		na::DefaultAllocator: na::Allocator<Self::Coordinate, Self::Dimension>,
 	{
 		let src = crate::position_index_conversion::cubic::index_to_position::<D>(S, index)?;
 		let mut dst = [0; D];
 
 		for (slot, value) in dst.iter_mut().zip(src.into_iter()) {
-			*slot = match u8::try_from(value){
+			*slot = match u8::try_from(value) {
 				Ok(value) => Some(value),
 				Err(err) => {
 					if cfg!(debug_assertions) {
-						eprintln!("Cube::<{}, {}>::index_to_position: `{}` returning `None` instead", S, D, err);
+						eprintln!(
+							"Cube::<{}, {}>::index_to_position: `{}` returning `None` instead",
+							S, D, err
+						);
 					}
 
 					None
-				},
+				}
 			}?;
 		}
 
