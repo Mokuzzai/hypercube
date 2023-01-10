@@ -2,7 +2,7 @@ use crate::na;
 
 pub trait Shape {
 	type Dimension: na::Dim;
-	type Coordinate;
+	type Coordinate: Ord;
 }
 
 pub trait IndexableShape: Shape {
