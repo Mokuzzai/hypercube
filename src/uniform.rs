@@ -7,12 +7,12 @@ use crate::Shape;
 pub struct UniformShape<const S: usize, const D: usize>;
 
 impl<const S: usize, const D: usize> Shape for UniformShape<S, D> {
-	type Dimension = na::Const<D>;
+	type Dim = na::Const<D>;
 }
 
 impl<const S: usize, const D: usize> IndexableShape for UniformShape<S, D>
 where
-	na::DefaultAllocator: na::Allocator<i32, Self::Dimension>,
+	na::DefaultAllocator: na::Allocator<i32, Self::Dim>,
 {
 	fn capacity(&self) -> usize {
 		S.pow(D as u32)
@@ -20,7 +20,8 @@ where
 
 	fn position_to_index(&self, position: SVector<Self>) -> Option<usize> {
 		crate::position_index_conversion::uniform::position_to_index(
-			S, na::itou(na::vtoa(position))?,
+			S,
+			na::itou(na::vtoa(position))?,
 		)
 	}
 	fn index_to_position(&self, index: usize) -> Option<SVector<Self>> {

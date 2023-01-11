@@ -1,12 +1,12 @@
 use crate::na;
 
 pub trait Shape {
-	type Dimension: na::Dim;
+	type Dim: na::Dim;
 }
 
 pub trait IndexableShape: Shape
 where
-	na::DefaultAllocator: na::Allocator<i32, Self::Dimension>,
+	na::DefaultAllocator: na::Allocator<i32, Self::Dim>,
 {
 	fn capacity(&self) -> usize;
 
@@ -15,4 +15,5 @@ where
 }
 
 /// [`na::OVector`] used to index [`IndexableShape`]
-pub type SVector<S> = na::OVector<i32, <S as Shape>::Dimension>;
+pub type SVector<S> = na::OVector<i32, SDim<S>>;
+pub type SDim<S> = <S as Shape>::Dim;

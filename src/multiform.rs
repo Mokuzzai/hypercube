@@ -14,7 +14,7 @@ mod macros {
 			$vis struct $Shape<$(const $N: usize),*>;
 
 			impl<$(const $N: usize),*> $crate::Shape for $Shape<$($N),*> {
-				type Dimension = $crate::na::Const<{ $D }>;
+				type Dim = $crate::na::Const<{ $D }>;
 			}
 
 			impl<$(const $N: usize),*> $crate::IndexableShape for $Shape<$($N),*> {
@@ -24,7 +24,7 @@ mod macros {
 
 				fn position_to_index(&self, position:$crate:: SVector<Self>) -> Option<usize>
 				where
-					$crate::na::DefaultAllocator: $crate::na::Allocator<i32, Self::Dimension>,
+					$crate::na::DefaultAllocator: $crate::na::Allocator<i32, Self::Dim>,
 				{
 					crate::position_index_conversion::multiform::position_to_index(
 						[$($N),*],
@@ -33,7 +33,7 @@ mod macros {
 				}
 				fn index_to_position(&self, index: usize) -> Option<$crate::SVector<Self>>
 				where
-					$crate::na::DefaultAllocator: $crate::na::Allocator<i32, Self::Dimension>,
+					$crate::na::DefaultAllocator: $crate::na::Allocator<i32, Self::Dim>,
 				{
 					let src = crate::position_index_conversion::multiform::index_to_position::<{ $D }>([$($N),*], index)?;
 

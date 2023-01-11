@@ -1,4 +1,6 @@
 pub use nalgebra::allocator::Allocator;
+pub use nalgebra::dimension::DimMax;
+pub use nalgebra::dimension::DimMaximum;
 pub use nalgebra::Dim;
 
 pub use nalgebra::DefaultAllocator;
