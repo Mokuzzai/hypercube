@@ -1,16 +1,22 @@
+use crate::na;
 use crate::IndexableShape;
 use crate::SVector;
-use crate::na;
 
 use std::ops::Range;
 
 /// [`Iterator`] over all the possible positions of a [`IndexableShape`]
-pub struct Positions<S: IndexableShape> {
+pub struct Positions<S: IndexableShape>
+where
+	na::DefaultAllocator: na::Allocator<i32, S::Dimension>,
+{
 	inner: Range<usize>,
 	shape: S,
 }
 
-impl<S: IndexableShape> Positions<S> {
+impl<S: IndexableShape> Positions<S>
+where
+	na::DefaultAllocator: na::Allocator<i32, S::Dimension>,
+{
 	pub fn new(shape: S) -> Self {
 		Self {
 			inner: 0..shape.capacity(),
@@ -21,7 +27,7 @@ impl<S: IndexableShape> Positions<S> {
 
 impl<S: IndexableShape> Iterator for Positions<S>
 where
-	na::DefaultAllocator: na::Allocator<S::Coordinate, S::Dimension>,
+	na::DefaultAllocator: na::Allocator<i32, S::Dimension>,
 {
 	type Item = SVector<S>;
 

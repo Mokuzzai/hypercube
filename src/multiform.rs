@@ -15,7 +15,6 @@ mod macros {
 
 			impl<$(const $N: usize),*> $crate::Shape for $Shape<$($N),*> {
 				type Dimension = $crate::na::Const<{ $D }>;
-				type Coordinate = u8;
 			}
 
 			impl<$(const $N: usize),*> $crate::IndexableShape for $Shape<$($N),*> {
@@ -25,28 +24,20 @@ mod macros {
 
 				fn position_to_index(&self, position:$crate:: SVector<Self>) -> Option<usize>
 				where
-					$crate::na::DefaultAllocator: $crate::na::Allocator<Self::Coordinate, Self::Dimension>,
+					$crate::na::DefaultAllocator: $crate::na::Allocator<i32, Self::Dimension>,
 				{
 					crate::position_index_conversion::multiform::position_to_index(
 						[$($N),*],
-						$crate::na::vtoa(position).map(Into::into),
+						$crate::na::itou($crate::na::vtoa(position))?,
 					)
 				}
 				fn index_to_position(&self, index: usize) -> Option<$crate::SVector<Self>>
 				where
-					$crate::na::DefaultAllocator: $crate::na::Allocator<Self::Coordinate, Self::Dimension>,
+					$crate::na::DefaultAllocator: $crate::na::Allocator<i32, Self::Dimension>,
 				{
 					let src = crate::position_index_conversion::multiform::index_to_position::<{ $D }>([$($N),*], index)?;
-					let mut dst = [0; ::std::convert::identity::<usize>($D)];
 
-					for (slot, value) in dst.iter_mut().zip(src.into_iter()) {
-						*slot = match u8::try_from(value) {
-							Ok(value) => Some(value),
-							Err(_) => None,
-						}?;
-					}
-
-					Some($crate::na::atov(dst))
+					Some($crate::na::atov($crate::na::utoi(src)?))
 				}
 			}
 		}
@@ -79,11 +70,3 @@ impl<T> Chunk for CollumnChunk16x16x256<T> {
 }
 
 pub type World2Collumns3<T> = World<WorldShape<2>, CollumnChunk16x16x256<T>>;
-
-
-
-
-
-
-
-

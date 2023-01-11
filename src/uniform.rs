@@ -1,48 +1,32 @@
-
+use crate::na;
 use crate::IndexableShape;
 use crate::SVector;
 use crate::Shape;
-use crate::na;
-
 
 /// [`Shape`]: A hypercube with `D` dimensions and side length of `S`
 pub struct UniformShape<const S: usize, const D: usize>;
 
 impl<const S: usize, const D: usize> Shape for UniformShape<S, D> {
 	type Dimension = na::Const<D>;
-	/// Using [`u8`] is probably fine since [`Chunk`](crate::Chunk) with stride greater than 255 *sounds* unreasonable
-	type Coordinate = u8;
 }
 
-impl<const S: usize, const D: usize> IndexableShape for UniformShape<S, D> {
+impl<const S: usize, const D: usize> IndexableShape for UniformShape<S, D>
+where
+	na::DefaultAllocator: na::Allocator<i32, Self::Dimension>,
+{
 	fn capacity(&self) -> usize {
 		S.pow(D as u32)
 	}
 
-	fn position_to_index(&self, position: SVector<Self>) -> Option<usize>
-	where
-		na::DefaultAllocator: na::Allocator<Self::Coordinate, Self::Dimension>,
-	{
+	fn position_to_index(&self, position: SVector<Self>) -> Option<usize> {
 		crate::position_index_conversion::uniform::position_to_index(
-			S,
-			na::vtoa(position).map(Into::into),
+			S, na::itou(na::vtoa(position))?,
 		)
 	}
-	fn index_to_position(&self, index: usize) -> Option<SVector<Self>>
-	where
-		na::DefaultAllocator: na::Allocator<Self::Coordinate, Self::Dimension>,
-	{
+	fn index_to_position(&self, index: usize) -> Option<SVector<Self>> {
 		let src = crate::position_index_conversion::uniform::index_to_position::<D>(S, index)?;
-		let mut dst = [0; D];
 
-		for (slot, value) in dst.iter_mut().zip(src.into_iter()) {
-			*slot = match u8::try_from(value) {
-				Ok(value) => Some(value),
-				Err(_) => None,
-			}?;
-		}
-
-		Some(na::atov(dst))
+		Some(na::atov(na::utoi(src)?))
 	}
 }
 

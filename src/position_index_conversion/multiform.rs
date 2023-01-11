@@ -4,7 +4,7 @@ pub fn position_to_index<const N: usize>(shape: [usize; N], position: [usize; N]
 		let stride = shape[i];
 
 		if coordinate >= stride {
-			return None
+			return None;
 		}
 
 		let subd: usize = shape.into_iter().take(i).product();
@@ -17,7 +17,7 @@ pub fn index_to_position<const N: usize>(shape: [usize; N], index: usize) -> Opt
 	let capacity = shape.into_iter().product();
 
 	if index >= capacity {
-		return None
+		return None;
 	}
 
 	let mut out = [0; N];
@@ -55,7 +55,8 @@ mod tests {
 					for y in 0..Y {
 						for x in 0..X {
 							let expected = it.next().unwrap();
-							let result = position_to_index([X, Y, Z, W, V], [x, y, z, w, v]).unwrap();
+							let result =
+								position_to_index([X, Y, Z, W, V], [x, y, z, w, v]).unwrap();
 
 							assert_eq!(expected, result);
 						}
@@ -63,7 +64,6 @@ mod tests {
 				}
 			}
 		}
-
 	}
 
 	#[test]
@@ -76,7 +76,8 @@ mod tests {
 					for y in 0..Y {
 						for x in 0..X {
 							let expected = [x, y, z, w, v];
-							let result = index_to_position([X, Y, Z, W, V], it.next().unwrap()).unwrap();
+							let result =
+								index_to_position([X, Y, Z, W, V], it.next().unwrap()).unwrap();
 
 							assert_eq!(expected, result);
 						}
@@ -84,6 +85,5 @@ mod tests {
 				}
 			}
 		}
-
 	}
 }

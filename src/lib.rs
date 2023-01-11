@@ -1,7 +1,7 @@
 mod chunk;
+mod positions;
 mod shape;
 mod world;
-mod positions;
 
 mod na;
 
@@ -26,4 +26,3 @@ pub mod multiform;
 
 /// Helper methods for implementing [`IndexableShape`]
 pub mod position_index_conversion;
-

@@ -1,20 +1,19 @@
 use crate::na;
-use crate::Shape;
 use crate::SVector;
+use crate::Shape;
 
 use std::cmp::Ordering;
 
-
 pub struct OrderedVector<S: Shape>
 where
-	na::DefaultAllocator: na::Allocator<S::Coordinate, S::Dimension>,
+	na::DefaultAllocator: na::Allocator<i32, S::Dimension>,
 {
 	pub coordinates: SVector<S>,
 }
 
 impl<S: Shape> OrderedVector<S>
 where
-	na::DefaultAllocator: na::Allocator<S::Coordinate, S::Dimension>,
+	na::DefaultAllocator: na::Allocator<i32, S::Dimension>,
 {
 	pub fn new(coordinates: SVector<S>) -> Self {
 		Self { coordinates }
@@ -23,21 +22,21 @@ where
 
 impl<S: Shape> PartialEq for OrderedVector<S>
 where
-	na::DefaultAllocator: na::Allocator<S::Coordinate, S::Dimension>,
+	na::DefaultAllocator: na::Allocator<i32, S::Dimension>,
 {
-    fn eq(&self, other: &Self) -> bool {
+	fn eq(&self, other: &Self) -> bool {
 		self.coordinates.eq(&other.coordinates)
-    }
+	}
 }
 
-impl<S: Shape> Eq for OrderedVector<S>
-where
-	na::DefaultAllocator: na::Allocator<S::Coordinate, S::Dimension>,
-{}
+impl<S: Shape> Eq for OrderedVector<S> where
+	na::DefaultAllocator: na::Allocator<i32, S::Dimension>,
+{
+}
 
 impl<S: Shape> PartialOrd for OrderedVector<S>
 where
-	na::DefaultAllocator: na::Allocator<S::Coordinate, S::Dimension>,
+	na::DefaultAllocator: na::Allocator<i32, S::Dimension>,
 {
 	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
 		self.coordinates
@@ -52,7 +51,7 @@ where
 
 impl<S: Shape> Ord for OrderedVector<S>
 where
-	na::DefaultAllocator: na::Allocator<S::Coordinate, S::Dimension>,
+	na::DefaultAllocator: na::Allocator<i32, S::Dimension>,
 {
 	fn cmp(&self, other: &Self) -> Ordering {
 		self.coordinates
