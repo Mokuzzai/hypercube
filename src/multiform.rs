@@ -1,5 +1,7 @@
 use crate::Chunk;
 use crate::World;
+use crate::na;
+use crate::Shape;
 
 mod macros {
 	#![no_implicit_prelude]
@@ -49,6 +51,16 @@ crate::multiform_shape! { pub MultiformShape4[X, Y, Z, W; 4] }
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash)]
 pub struct CollumnChunk16x16x256<T> {
 	buffer: [T; 16 * 16 * 256],
+}
+
+impl<T> CollumnChunk16x16x256<T> {
+	pub fn new(buffer: [T; 16 * 16 * 256]) -> Self {
+		Self { buffer }
+	}
+
+	pub fn from_fn(mut f: impl FnMut(na::Vector<i32, 3>) -> T) -> Self {
+		Self::new(std::array::from_fn(|index| f(MultiformShape3::<16, 16, 256>.index_to_position(index).unwrap())))
+	}
 }
 
 impl<T> Chunk<3> for CollumnChunk16x16x256<T> {

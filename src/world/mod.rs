@@ -29,6 +29,9 @@ impl<C: Chunk<V>, const E: usize, const V: usize> World<C, E, V> {
 	pub fn chunk_mut(&mut self, position: na::Vector<i32, E>) -> Option<&mut C> {
 		self.chunks.get_mut(&OrderedVector::new(position))
 	}
+	pub fn insert(&mut self, position: na::Vector<i32, E>, chunk: C) -> Option<C> {
+		self.chunks.insert(OrderedVector::new(position), chunk)
+	}
 	pub fn get_or_insert_with(&mut self, position: na::Vector<i32, E>, chunk: impl FnMut() -> C) -> &mut C {
 		self.chunks
 			.entry(OrderedVector::new(position))
@@ -112,3 +115,48 @@ const _: () = {
 		}
 	}
 };
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::multiform::World2Collumns3;
+	use crate::multiform::CollumnChunk16x16x256;
+
+	#[test]
+	fn test_global_to_chunk_subchunk() {
+		let mut world = World2Collumns3::<na::Vector<i32, 3>>::new();
+
+		fn push(world: &mut World2Collumns3<na::Vector<i32, 3>>, w: [i32; 2], c: [i32; 3]) {
+			world.insert(na::Vector::from(w), CollumnChunk16x16x256::from_fn(|s| s + na::Vector::from(c)));
+		}
+
+		let mut static_world = unsafe { &mut *(&mut world as *mut _) };
+
+		let thread = std::thread::Builder::new()
+			.name(String::from("`test_global_to_chunk_subchunk`: Create chunks"))
+			.stack_size(67108864)
+			.spawn(move || {
+				push(static_world, [0, 0],  [0, 0, 0]);
+				push(static_world, [1, 1],  [16, 16, 0]);
+				push(static_world, [1, 0],  [16, 0, 0]);
+				push(static_world, [0, 1],  [0, 16, 0]);
+				push(static_world, [-1, 1], [-16, 16, 0]);
+				push(static_world, [1, -1], [16, -16, 0]);
+				push(static_world, [-1, 0], [-16, 0, 0]);
+				push(static_world, [0, -1], [0, -16, 0]);
+		});
+
+		thread.unwrap().join().unwrap();
+
+		for z in 0..256 {
+			for y in -16..16*2 {
+				for x in -16..16*2 {
+					assert_eq!(*world.block(na::Vector::from([x, y, z])).unwrap(), na::Vector::from([x, y, z]))
+				}
+			}
+		}
+	}
+
+}
+
+
