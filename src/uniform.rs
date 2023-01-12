@@ -1,5 +1,4 @@
 use crate::na;
-use crate::IndexableShape;
 use crate::Shape;
 
 /// [`Shape`]: A hypercube with `D` dimensions and side length of `S`
@@ -7,9 +6,15 @@ use crate::Shape;
 #[derive(Debug, Default, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash)]
 pub struct UniformShape<const S: usize, const D: usize>;
 
-impl<const S: usize, const D: usize> Shape<D> for UniformShape<S, D> {}
+impl<const S: usize, const D: usize> Shape<D> for UniformShape<S, D> {
+	fn new() -> Self {
+		UniformShape
+	}
 
-impl<const S: usize, const D: usize> IndexableShape<D> for UniformShape<S, D> {
+	fn shape(&self) -> na::Vector<i32, D> {
+		na::Vector::from_element(S as i32)
+	}
+
 	fn capacity(&self) -> usize {
 		S.pow(D as u32)
 	}

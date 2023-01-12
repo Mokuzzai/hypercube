@@ -51,21 +51,46 @@ impl<C: Chunk<V>, const E: usize, const V: usize> World<C, E, V> {
 	}
 }
 
-// impl<S: Shape, C: Chunk> World<S, C>
-// where
-// 	na::DefaultAllocator: na::Allocator<i32, S::Dim>,
-// 	na::DefaultAllocator: na::Allocator<i32, <C::Shape as Shape>::Dim>,
-// 	na::DefaultAllocator: na::Allocator<i32, WDim<S, C>>,
-// 	SDim<S>: na::DimMax<CDim<C>>,
-// {
-// 	pub fn block(&mut self, position: WVector<S, C>) -> Option<&C::Item> {
-// 		// `position` is roughly Vector<max(world.shape.coordinates, world.chunk.shape.coordinates), max(world.shape.dimenison, world.chunk.shape.dimension)>
-// 		todo!()
-// 	}
-// 	pub fn block_mut(&mut self, position: WVector<S, C>) -> Option<&mut C::Item> {
-// 		todo!()
-// 	}
-// }
+impl<C: Chunk<V>, const E: usize, const V: usize, const W: usize> World<C, E, V>
+where
+	na::Const<E>: na::DimMax<na::Const<V>, Output = na::Const<W>>,
+{
+	pub fn global_to_chunk_subchunk(position: na::Vector<i32, W>) -> (na::Vector<i32, E>, na::Vector<i32, V>) {
+		let chunk_shape = <C::Shape as Shape<V>>::new().shape();
+
+		// let position_as_chunk = position.resize_generic(na::Const::<E>, na::Const::<1>, 0);
+
+		let chunk_shape_as_global = chunk_shape.resize_generic(na::Const::<W>, na::Const::<1>, 0);
+
+
+		// this subchunk might be negative and if it is it should be inversed
+		let mut subchunk_as_global = position.zip_map(&chunk_shape_as_global, std::ops::Rem::rem);
+
+		for (value, &extent) in subchunk_as_global.iter_mut().zip(chunk_shape_as_global.iter()) {
+			if value.is_negative() {
+				*value += extent;
+			}
+		}
+
+		let chunk_as_global = position.zip_map(&chunk_shape_as_global, std::ops::Div::div);
+
+		let subchunk = subchunk_as_global.resize_generic(na::Const::<V>, na::Const::<1>, 0);
+		let chunk = chunk_as_global.resize_generic(na::Const::<E>, na::Const::<1>, 0);
+
+		(chunk, subchunk)
+	}
+
+	pub fn block(&mut self, position: na::Vector<i32, W>) -> Option<&C::Item> {
+		let (chunk, subchunk) = Self::global_to_chunk_subchunk(position);
+
+		self.chunk(chunk)?.get(subchunk)
+	}
+	pub fn block_mut(&mut self, position: na::Vector<i32, W>) -> Option<&mut C::Item> {
+		let (chunk, subchunk) = Self::global_to_chunk_subchunk(position);
+
+		self.chunk_mut(chunk)?.get_mut(subchunk)
+	}
+}
 
 impl<C: Chunk<V>, const E: usize, const V: usize> Default for World<C, E, V> {
 	fn default() -> Self {

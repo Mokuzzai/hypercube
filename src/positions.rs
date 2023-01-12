@@ -1,17 +1,17 @@
 use crate::na;
-use crate::IndexableShape;
+use crate::Shape;
 
 use std::ops::Range;
 
-/// [`Iterator`] over all the possible positions of a [`IndexableShape`]
+/// [`Iterator`] over all the possible positions of a [`Shape`]
 
 #[derive(Debug, Default, Eq, PartialEq, Clone, Hash)]
-pub struct Positions<S: IndexableShape<D>, const D: usize> {
+pub struct Positions<S: Shape<D>, const D: usize> {
 	inner: Range<usize>,
 	shape: S,
 }
 
-impl<S: IndexableShape<D>, const D: usize> Positions<S, D> {
+impl<S: Shape<D>, const D: usize> Positions<S, D> {
 	pub fn new(shape: S) -> Self {
 		Self {
 			inner: 0..shape.capacity(),
@@ -20,7 +20,7 @@ impl<S: IndexableShape<D>, const D: usize> Positions<S, D> {
 	}
 }
 
-impl<S: IndexableShape<D>, const D: usize> Iterator for Positions<S, D>
+impl<S: Shape<D>, const D: usize> Iterator for Positions<S, D>
 {
 	type Item = na::Vector<i32, D>;
 
@@ -34,7 +34,7 @@ impl<S: IndexableShape<D>, const D: usize> Iterator for Positions<S, D>
 const _: () = {
 	use std::fmt::*;
 
-	impl<S: IndexableShape<D>, const D: usize> Positions<S, D>
+	impl<S: Shape<D>, const D: usize> Positions<S, D>
 		where S: Debug,
 	{
 		fn fmt(&self, f: &mut Formatter) -> Result {

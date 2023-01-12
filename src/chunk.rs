@@ -1,10 +1,9 @@
 use crate::na;
-use crate::IndexableShape;
 use crate::Shape;
 
 pub trait Chunk<const D: usize> {
 	type Item;
-	type Shape: IndexableShape<D>;
+	type Shape: Shape<D>;
 
 	fn shape(&self) -> &Self::Shape;
 

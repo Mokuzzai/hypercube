@@ -1,8 +1,10 @@
 use crate::na;
 
-pub trait Shape<const D: usize> {}
+pub trait Shape<const D: usize> {
+	fn new() -> Self;
 
-pub trait IndexableShape<const D: usize>: Shape<D> {
+	fn shape(&self) -> na::Vector<i32, D>;
+
 	fn capacity(&self) -> usize;
 
 	fn position_to_index(&self, position: na::Vector<i32, D>) -> Option<usize>;

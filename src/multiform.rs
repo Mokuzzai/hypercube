@@ -13,9 +13,14 @@ mod macros {
 			#[derive(Debug, Default, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash)]
 			$vis struct $Shape<$(const $N: usize),*>;
 
-			impl<$(const $N: usize),*> $crate::Shape<$D> for $Shape<$($N),*> {}
+			impl<$(const $N: usize),*> $crate::Shape<$D> for $Shape<$($N),*> {
+				fn new() -> Self {
+					$Shape
+				}
+				fn shape(&self) -> $crate::na::Vector<i32, $D> {
+					$crate::na::Vector::from([$($N as i32),*])
+				}
 
-			impl<$(const $N: usize),*> $crate::IndexableShape<$D> for $Shape<$($N),*> {
 				fn capacity(&self) -> usize {
 					1 $(* ::std::convert::identity::<usize>($N))*
 				}

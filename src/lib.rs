@@ -8,8 +8,6 @@ mod world;
 
 mod na;
 
-pub use shape::IndexableShape;
-
 pub use shape::Shape;
 
 pub use chunk::Chunk;
@@ -25,5 +23,5 @@ pub mod uniform;
 /// Implementation of multiform [`Chunk`]s and [`World`]s
 pub mod multiform;
 
-/// Helper methods for implementing [`IndexableShape`]
+/// Helper methods for implementing [`Shape`]
 pub mod position_index_conversion;
