@@ -47,8 +47,8 @@ mod macros {
 				type Item = T;
 				type Shape = $crate::uniform::UniformShape<{ $S }, { $D }>;
 
-				fn shape(&self) -> &Self::Shape {
-					&$crate::uniform::UniformShape
+				fn shape(&self) -> Self::Shape {
+					$crate::uniform::UniformShape
 				}
 				fn index(&self, index: ::std::primitive::usize) -> ::std::option::Option<&Self::Item> {
 					self.buffer.get(index)

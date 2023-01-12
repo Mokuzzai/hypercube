@@ -4,7 +4,6 @@ use crate::Shape;
 use std::ops::Range;
 
 /// [`Iterator`] over all the possible positions of a [`Shape`]
-
 #[derive(Debug, Default, Eq, PartialEq, Clone, Hash)]
 pub struct Positions<S: Shape<D>, const D: usize> {
 	inner: Range<usize>,

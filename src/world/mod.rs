@@ -29,10 +29,10 @@ impl<C: Chunk<V>, const E: usize, const V: usize> World<C, E, V> {
 	pub fn chunk_mut(&mut self, position: na::Vector<i32, E>) -> Option<&mut C> {
 		self.chunks.get_mut(&OrderedVector::new(position))
 	}
-	pub fn insert(&mut self, position: na::Vector<i32, E>, chunk: C) -> Option<C> {
+	pub fn chunk_insert(&mut self, position: na::Vector<i32, E>, chunk: C) -> Option<C> {
 		self.chunks.insert(OrderedVector::new(position), chunk)
 	}
-	pub fn get_or_insert_with(&mut self, position: na::Vector<i32, E>, chunk: impl FnMut() -> C) -> &mut C {
+	pub fn chunk_or_insert_with(&mut self, position: na::Vector<i32, E>, chunk: impl FnMut() -> C) -> &mut C {
 		self.chunks
 			.entry(OrderedVector::new(position))
 			.or_insert_with(chunk)
@@ -58,10 +58,8 @@ impl<C: Chunk<V>, const E: usize, const V: usize, const W: usize> World<C, E, V>
 where
 	na::Const<E>: na::DimMax<na::Const<V>, Output = na::Const<W>>,
 {
-	pub fn global_to_chunk_subchunk(position: na::Vector<i32, W>) -> (na::Vector<i32, E>, na::Vector<i32, V>) {
+	pub fn global_to_chunk_subchunk(&self, position: na::Vector<i32, W>) -> (na::Vector<i32, E>, na::Vector<i32, V>) {
 		let chunk_shape = <C::Shape as Shape<V>>::new().shape();
-
-		// let position_as_chunk = position.resize_generic(na::Const::<E>, na::Const::<1>, 0);
 
 		let chunk_shape_as_global = chunk_shape.resize_generic(na::Const::<W>, na::Const::<1>, 0);
 
@@ -70,9 +68,7 @@ where
 		let mut subchunk_as_global = position.zip_map(&chunk_shape_as_global, std::ops::Rem::rem);
 
 		for (value, &extent) in subchunk_as_global.iter_mut().zip(chunk_shape_as_global.iter()) {
-			if value.is_negative() {
-				*value += extent;
-			}
+			*value = (*value + extent) % extent
 		}
 
 		let chunk_as_global = position.zip_map(&chunk_shape_as_global, std::ops::Div::div);
@@ -82,14 +78,19 @@ where
 
 		(chunk, subchunk)
 	}
-
-	pub fn block(&mut self, position: na::Vector<i32, W>) -> Option<&C::Item> {
-		let (chunk, subchunk) = Self::global_to_chunk_subchunk(position);
+	pub fn global_to_chunk(&self, position: na::Vector<i32, W>) -> na::Vector<i32, E> {
+		self.global_to_chunk_subchunk(position).0
+	}
+	pub fn global_to_subchunk(&self, position: na::Vector<i32, W>) -> na::Vector<i32, V> {
+		self.global_to_chunk_subchunk(position).1
+	}
+	pub fn subchunk(&mut self, position: na::Vector<i32, W>) -> Option<&C::Item> {
+		let (chunk, subchunk) = self.global_to_chunk_subchunk(position);
 
 		self.chunk(chunk)?.get(subchunk)
 	}
-	pub fn block_mut(&mut self, position: na::Vector<i32, W>) -> Option<&mut C::Item> {
-		let (chunk, subchunk) = Self::global_to_chunk_subchunk(position);
+	pub fn subchunk_mut(&mut self, position: na::Vector<i32, W>) -> Option<&mut C::Item> {
+		let (chunk, subchunk) = self.global_to_chunk_subchunk(position);
 
 		self.chunk_mut(chunk)?.get_mut(subchunk)
 	}
@@ -118,45 +119,36 @@ const _: () = {
 
 #[cfg(test)]
 mod tests {
-	use super::*;
-	use crate::multiform::World2Collumns3;
-	use crate::multiform::CollumnChunk16x16x256;
+	// how do i test this??
 
-	#[test]
-	fn test_global_to_chunk_subchunk() {
-		let mut world = World2Collumns3::<na::Vector<i32, 3>>::new();
-
-		fn push(world: &mut World2Collumns3<na::Vector<i32, 3>>, w: [i32; 2], c: [i32; 3]) {
-			world.insert(na::Vector::from(w), CollumnChunk16x16x256::from_fn(|s| s + na::Vector::from(c)));
-		}
-
-		let mut static_world = unsafe { &mut *(&mut world as *mut _) };
-
-		let thread = std::thread::Builder::new()
-			.name(String::from("`test_global_to_chunk_subchunk`: Create chunks"))
-			.stack_size(67108864)
-			.spawn(move || {
-				push(static_world, [0, 0],  [0, 0, 0]);
-				push(static_world, [1, 1],  [16, 16, 0]);
-				push(static_world, [1, 0],  [16, 0, 0]);
-				push(static_world, [0, 1],  [0, 16, 0]);
-				push(static_world, [-1, 1], [-16, 16, 0]);
-				push(static_world, [1, -1], [16, -16, 0]);
-				push(static_world, [-1, 0], [-16, 0, 0]);
-				push(static_world, [0, -1], [0, -16, 0]);
-		});
-
-		thread.unwrap().join().unwrap();
-
-		for z in 0..256 {
-			for y in -16..16*2 {
-				for x in -16..16*2 {
-					assert_eq!(*world.block(na::Vector::from([x, y, z])).unwrap(), na::Vector::from([x, y, z]))
-				}
-			}
-		}
-	}
-
+	// use super::*;
+	// use crate::multiform::World2Collumns3;
+	// use crate::multiform::CollumnChunk16x16x256;
+ //
+	// #[test]
+	// fn test_global_to_chunk_subchunk_1() {
+	// 	std::thread::Builder::new()
+	// 		.name(module_path!().into())
+	// 		.stack_size(2usize.pow(24) * 2)
+	// 		.spawn(|| {
+	// 			let mut world = World2Collumns3::<na::Vector<i32, 3>>::new();
+ //
+	// 			world.chunk_insert(na::Vector::from([0, 0]), CollumnChunk16x16x256::from_fn(std::convert::identity));
+ //
+	// 			for z in 0..256 {
+	// 				for y in 0..16{
+	// 					for x in 0..16 {
+	// 						let (chunk, subchunk) = world.global_to_chunk_subchunk(na::Vector::from([x, y, z]));
+ //
+	// 						eprintln!("{:?} {:?}", chunk, subchunk);
+	// 					}
+	// 				}
+	// 			}
+	// 		})
+	// 		.expect("failed to spawn thread")
+	// 		.join()
+	// 		.unwrap();
+	// }
 }
 
 

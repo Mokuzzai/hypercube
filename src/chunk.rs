@@ -1,11 +1,12 @@
 use crate::na;
 use crate::Shape;
+use crate::Positions;
 
 pub trait Chunk<const D: usize> {
 	type Item;
 	type Shape: Shape<D>;
 
-	fn shape(&self) -> &Self::Shape;
+	fn shape(&self) -> Self::Shape;
 
 	fn index(&self, index: usize) -> Option<&Self::Item>;
 	fn index_mut(&mut self, index: usize) -> Option<&mut Self::Item>;
@@ -20,6 +21,10 @@ pub trait Chunk<const D: usize> {
 		let index = self.shape().position_to_index(position)?;
 
 		self.index_mut(index)
+	}
+
+	fn positions(&self) -> Positions<Self::Shape, D> {
+		Positions::new(self.shape())
 	}
 }
 
@@ -41,7 +46,7 @@ impl<C: Chunk<D>, P, const D: usize> Chunk<D> for WithPayload<C, P> {
 	type Item = C::Item;
 	type Shape = C::Shape;
 
-	fn shape(&self) -> &Self::Shape {
+	fn shape(&self) -> Self::Shape {
 		self.chunk.shape()
 	}
 

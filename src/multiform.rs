@@ -67,8 +67,8 @@ impl<T> Chunk<3> for CollumnChunk16x16x256<T> {
 	type Item = T;
 	type Shape = MultiformShape3<16, 16, 256>;
 
-	fn shape(&self) -> &Self::Shape {
-		&MultiformShape3
+	fn shape(&self) -> Self::Shape {
+		MultiformShape3
 	}
 
 	fn index(&self, index: usize) -> Option<&T> {
