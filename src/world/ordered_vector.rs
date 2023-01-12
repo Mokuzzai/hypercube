@@ -1,40 +1,28 @@
 use crate::na;
-use crate::SVector;
 use crate::Shape;
 
 use std::cmp::Ordering;
 
-pub struct OrderedVector<S: Shape>
-where
-	na::DefaultAllocator: na::Allocator<i32, S::Dim>,
-{
-	pub coordinates: SVector<S>,
+pub struct OrderedVector<const D: usize> {
+	pub coordinates: na::Vector<i32, D>,
 }
 
-impl<S: Shape> OrderedVector<S>
-where
-	na::DefaultAllocator: na::Allocator<i32, S::Dim>,
-{
-	pub fn new(coordinates: SVector<S>) -> Self {
+impl<const D: usize> OrderedVector<D> {
+	pub fn new(coordinates: na::Vector<i32, D>) -> Self {
 		Self { coordinates }
 	}
 }
 
-impl<S: Shape> PartialEq for OrderedVector<S>
-where
-	na::DefaultAllocator: na::Allocator<i32, S::Dim>,
+impl<const D: usize> PartialEq for OrderedVector<D>
 {
 	fn eq(&self, other: &Self) -> bool {
 		self.coordinates.eq(&other.coordinates)
 	}
 }
 
-impl<S: Shape> Eq for OrderedVector<S> where na::DefaultAllocator: na::Allocator<i32, S::Dim> {}
+impl<const D: usize> Eq for OrderedVector<D> {}
 
-impl<S: Shape> PartialOrd for OrderedVector<S>
-where
-	na::DefaultAllocator: na::Allocator<i32, S::Dim>,
-{
+impl<const D: usize> PartialOrd for OrderedVector<D> {
 	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
 		self.coordinates
 			.iter()
@@ -46,10 +34,7 @@ where
 	}
 }
 
-impl<S: Shape> Ord for OrderedVector<S>
-where
-	na::DefaultAllocator: na::Allocator<i32, S::Dim>,
-{
+impl<const D: usize> Ord for OrderedVector<D> {
 	fn cmp(&self, other: &Self) -> Ordering {
 		self.coordinates
 			.iter()
@@ -62,10 +47,7 @@ where
 const _: () = {
 	use std::fmt::*;
 
-	impl<S: Shape> Debug for OrderedVector<S>
-	where
-		na::DefaultAllocator: na::Allocator<i32, S::Dim>,
-	{
+	impl<const D: usize> Debug for OrderedVector<D> {
 		fn fmt(&self, f: &mut Formatter) -> Result {
 			Debug::fmt(&self.coordinates, f)
 		}

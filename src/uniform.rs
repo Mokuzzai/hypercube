@@ -1,30 +1,26 @@
 use crate::na;
 use crate::IndexableShape;
-use crate::SVector;
 use crate::Shape;
 
 /// [`Shape`]: A hypercube with `D` dimensions and side length of `S`
+
+#[derive(Debug, Default, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash)]
 pub struct UniformShape<const S: usize, const D: usize>;
 
-impl<const S: usize, const D: usize> Shape for UniformShape<S, D> {
-	type Dim = na::Const<D>;
-}
+impl<const S: usize, const D: usize> Shape<D> for UniformShape<S, D> {}
 
-impl<const S: usize, const D: usize> IndexableShape for UniformShape<S, D>
-where
-	na::DefaultAllocator: na::Allocator<i32, Self::Dim>,
-{
+impl<const S: usize, const D: usize> IndexableShape<D> for UniformShape<S, D> {
 	fn capacity(&self) -> usize {
 		S.pow(D as u32)
 	}
 
-	fn position_to_index(&self, position: SVector<Self>) -> Option<usize> {
+	fn position_to_index(&self, position: na::Vector<i32, D>) -> Option<usize> {
 		crate::position_index_conversion::uniform::position_to_index(
 			S,
 			na::itou(na::vtoa(position))?,
 		)
 	}
-	fn index_to_position(&self, index: usize) -> Option<SVector<Self>> {
+	fn index_to_position(&self, index: usize) -> Option<na::Vector<i32, D>> {
 		let src = crate::position_index_conversion::uniform::index_to_position::<D>(S, index)?;
 
 		Some(na::atov(na::utoi(src)?))
@@ -37,11 +33,12 @@ mod macros {
 	#[macro_export]
 	macro_rules! uniform_chunk {
 		($vis:vis $Chunk:ident[$S:expr; $D:expr] $(, $World:ident)? $(,)?) => {
+			#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash)]
 			$vis struct $Chunk<T> {
 				buffer: [T; ::std::convert::identity::<usize>($S).pow(::std::convert::identity::<usize>($D) as ::std::primitive::u32)],
 			}
 
-			impl<T> $crate::Chunk for $Chunk<T> {
+			impl<T> $crate::Chunk<$D> for $Chunk<T> {
 				type Item = T;
 				type Shape = $crate::uniform::UniformShape<{ $S }, { $D }>;
 
@@ -56,7 +53,9 @@ mod macros {
 				}
 			}
 
-			$($vis type $World<T> = $crate::World<$crate::WorldShape<{ $D }>, $Chunk<T>>;)*
+			$($vis type $World<T> = $crate::World<$Chunk<T>, $D, $D>;)*
+
+			// TODO impl `Default`
 		}
 	}
 

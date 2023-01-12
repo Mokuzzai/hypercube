@@ -1,22 +1,17 @@
 use crate::na;
 use crate::IndexableShape;
-use crate::SVector;
 
 use std::ops::Range;
 
 /// [`Iterator`] over all the possible positions of a [`IndexableShape`]
-pub struct Positions<S: IndexableShape>
-where
-	na::DefaultAllocator: na::Allocator<i32, S::Dim>,
-{
+
+#[derive(Debug, Default, Eq, PartialEq, Clone, Hash)]
+pub struct Positions<S: IndexableShape<D>, const D: usize> {
 	inner: Range<usize>,
 	shape: S,
 }
 
-impl<S: IndexableShape> Positions<S>
-where
-	na::DefaultAllocator: na::Allocator<i32, S::Dim>,
-{
+impl<S: IndexableShape<D>, const D: usize> Positions<S, D> {
 	pub fn new(shape: S) -> Self {
 		Self {
 			inner: 0..shape.capacity(),
@@ -25,11 +20,9 @@ where
 	}
 }
 
-impl<S: IndexableShape> Iterator for Positions<S>
-where
-	na::DefaultAllocator: na::Allocator<i32, S::Dim>,
+impl<S: IndexableShape<D>, const D: usize> Iterator for Positions<S, D>
 {
-	type Item = SVector<S>;
+	type Item = na::Vector<i32, D>;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		let next = self.inner.next()?;
@@ -41,10 +34,8 @@ where
 const _: () = {
 	use std::fmt::*;
 
-	impl<S: IndexableShape> Debug for Positions<S>
-	where
-		na::DefaultAllocator: na::Allocator<i32, S::Dim>,
-		S: Debug,
+	impl<S: IndexableShape<D>, const D: usize> Positions<S, D>
+		where S: Debug,
 	{
 		fn fmt(&self, f: &mut Formatter) -> Result {
 			f.debug_struct("Positions")
