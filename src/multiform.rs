@@ -43,6 +43,8 @@ mod macros {
 	}
 }
 
+// TODO generate generalized chunk for each
+
 crate::multiform_shape! { pub MultiformShape1[X; 1] }
 crate::multiform_shape! { pub MultiformShape2[X, Y; 2] }
 crate::multiform_shape! { pub MultiformShape3[X, Y, Z; 3] }
@@ -80,7 +82,13 @@ impl<T> Chunk<3> for CollumnChunk16x16x256<T> {
 		self.buffer.get_mut(index)
 	}
 }
-
-// TODO impl `Default`
+impl<T> Default for CollumnChunk16x16x256<T>
+where
+	T: Default,
+{
+	fn default() -> Self {
+		Self::new(std::array::from_fn(|_| Default::default()))
+	}
+}
 
 pub type World2Collumns3<T> = World<CollumnChunk16x16x256<T>, 2, 3>;

@@ -38,9 +38,17 @@ pub struct UniformChunk<T, const S: usize, const D: usize, const C: usize> {
 	buffer: [T; C],
 }
 
+/// # Panics
+///
+/// if `debug_assertions` are enabled constructors panic if:
+/// * S.pow(D as u32) != C
+/// * D == 0
+/// * D > u32::MAX
 impl<T, const S: usize, const D: usize, const C: usize> UniformChunk<T, S, D, C> {
 	pub fn new(buffer: [T; C]) -> Self {
 		debug_assert_eq!(C, S.pow(D as u32));
+		debug_assert_ne!(D, 0);
+		debug_assert!(D <= u32::MAX as usize);
 
 		Self { buffer }
 	}
