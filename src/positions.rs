@@ -19,8 +19,7 @@ impl<S: Shape<D>, const D: usize> Positions<S, D> {
 	}
 }
 
-impl<S: Shape<D>, const D: usize> Iterator for Positions<S, D>
-{
+impl<S: Shape<D>, const D: usize> Iterator for Positions<S, D> {
 	type Item = na::Vector<i32, D>;
 
 	fn next(&mut self) -> Option<Self::Item> {
@@ -34,7 +33,8 @@ const _: () = {
 	use std::fmt::*;
 
 	impl<S: Shape<D>, const D: usize> Positions<S, D>
-		where S: Debug,
+	where
+		S: Debug,
 	{
 		fn fmt(&self, f: &mut Formatter) -> Result {
 			f.debug_struct("Positions")

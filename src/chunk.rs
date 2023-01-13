@@ -1,6 +1,6 @@
 use crate::na;
-use crate::Shape;
 use crate::Positions;
+use crate::Shape;
 
 pub trait Chunk<const D: usize> {
 	type Item;

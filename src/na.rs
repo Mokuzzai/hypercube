@@ -1,4 +1,3 @@
-
 pub use nalgebra::dimension::DimMax;
 pub use nalgebra::dimension::DimMaximum;
 pub use nalgebra::Dim;

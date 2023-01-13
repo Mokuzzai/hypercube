@@ -13,8 +13,7 @@ impl<const D: usize> OrderedVector<D> {
 	}
 }
 
-impl<const D: usize> PartialEq for OrderedVector<D>
-{
+impl<const D: usize> PartialEq for OrderedVector<D> {
 	fn eq(&self, other: &Self) -> bool {
 		self.coordinates.eq(&other.coordinates)
 	}

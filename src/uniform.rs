@@ -1,6 +1,6 @@
 use crate::na;
-use crate::Shape;
 use crate::Chunk;
+use crate::Shape;
 
 /// [`Shape`]: A hypercube with `D` dimensions and side length of `S`
 
@@ -41,9 +41,9 @@ pub struct UniformChunk<T, const S: usize, const D: usize, const C: usize> {
 /// # Panics
 ///
 /// if `debug_assertions` are enabled constructors panic if:
-/// * S.pow(D as u32) != C
-/// * D == 0
-/// * D > u32::MAX
+/// * `S.pow(D as u32) != C`
+/// * `D == 0`
+/// * `D > u32::MAX`
 impl<T, const S: usize, const D: usize, const C: usize> UniformChunk<T, S, D, C> {
 	pub fn new(buffer: [T; C]) -> Self {
 		debug_assert_eq!(C, S.pow(D as u32));

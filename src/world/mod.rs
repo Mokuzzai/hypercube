@@ -32,7 +32,11 @@ impl<C: Chunk<V>, const E: usize, const V: usize> World<C, E, V> {
 	pub fn chunk_insert(&mut self, position: na::Vector<i32, E>, chunk: C) -> Option<C> {
 		self.chunks.insert(OrderedVector::new(position), chunk)
 	}
-	pub fn chunk_or_insert_with(&mut self, position: na::Vector<i32, E>, chunk: impl FnMut() -> C) -> &mut C {
+	pub fn chunk_or_insert_with(
+		&mut self,
+		position: na::Vector<i32, E>,
+		chunk: impl FnMut() -> C,
+	) -> &mut C {
 		self.chunks
 			.entry(OrderedVector::new(position))
 			.or_insert_with(chunk)
@@ -58,16 +62,21 @@ impl<C: Chunk<V>, const E: usize, const V: usize, const W: usize> World<C, E, V>
 where
 	na::Const<E>: na::DimMax<na::Const<V>, Output = na::Const<W>>,
 {
-	pub fn global_to_chunk_subchunk(&self, position: na::Vector<i32, W>) -> (na::Vector<i32, E>, na::Vector<i32, V>) {
+	pub fn global_to_chunk_subchunk(
+		&self,
+		position: na::Vector<i32, W>,
+	) -> (na::Vector<i32, E>, na::Vector<i32, V>) {
 		let chunk_shape = <C::Shape as Shape<V>>::new().shape();
 
 		let chunk_shape_as_global = chunk_shape.resize_generic(na::Const::<W>, na::Const::<1>, 0);
 
-
 		// this subchunk might be negative and if it is it should be inversed
 		let mut subchunk_as_global = position.zip_map(&chunk_shape_as_global, std::ops::Rem::rem);
 
-		for (value, &extent) in subchunk_as_global.iter_mut().zip(chunk_shape_as_global.iter()) {
+		for (value, &extent) in subchunk_as_global
+			.iter_mut()
+			.zip(chunk_shape_as_global.iter())
+		{
 			*value = (*value + extent) % extent
 		}
 
@@ -120,8 +129,8 @@ const _: () = {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::multiform::World2Collumns3;
 	use crate::multiform::CollumnChunk16x16x256;
+	use crate::multiform::World2Collumns3;
 
 	#[test]
 	/// This test finishes `ok` but might overflow its stack
@@ -136,16 +145,24 @@ mod tests {
 					for x in -1..2 {
 						let chunk = na::Vector::from([x, y]);
 
-						world.chunk_insert(na::Vector::from(chunk), CollumnChunk16x16x256::from_positions(|subchunk| (chunk, subchunk)));
+						world.chunk_insert(
+							na::Vector::from(chunk),
+							CollumnChunk16x16x256::from_positions(|subchunk| (chunk, subchunk)),
+						);
 					}
 				}
 
 				for z in 0..256 {
 					for y in -16..32 {
 						for x in -16..32 {
-							let (result_chunk, result_subchunk) = world.global_to_chunk_subchunk(na::Vector::from([x, y, z]));
+							let (result_chunk, result_subchunk) =
+								world.global_to_chunk_subchunk(na::Vector::from([x, y, z]));
 
-							let &(expected_chunk, expected_subchunk) = world.chunk(result_chunk).unwrap().get(result_subchunk).unwrap();
+							let &(expected_chunk, expected_subchunk) = world
+								.chunk(result_chunk)
+								.unwrap()
+								.get(result_subchunk)
+								.unwrap();
 
 							assert_eq!(result_chunk, expected_chunk);
 							assert_eq!(result_subchunk, expected_subchunk);
@@ -158,5 +175,3 @@ mod tests {
 			.unwrap();
 	}
 }
-
-

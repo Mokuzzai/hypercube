@@ -1,7 +1,7 @@
-use crate::Chunk;
-use crate::World;
 use crate::na;
+use crate::Chunk;
 use crate::Shape;
+use crate::World;
 
 mod macros {
 	#![no_implicit_prelude]
@@ -63,7 +63,11 @@ impl<T> CollumnChunk16x16x256<T> {
 		Self::new(std::array::from_fn(f))
 	}
 	pub fn from_positions(mut f: impl FnMut(na::Vector<i32, 3>) -> T) -> Self {
-		Self::from_indices(|index| f(MultiformShape3::<16, 16, 256>.index_to_position(index).unwrap()))
+		Self::from_indices(|index| {
+			f(MultiformShape3::<16, 16, 256>
+				.index_to_position(index)
+				.unwrap())
+		})
 	}
 }
 
