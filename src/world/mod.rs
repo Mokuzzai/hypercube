@@ -119,36 +119,43 @@ const _: () = {
 
 #[cfg(test)]
 mod tests {
-	// how do i test this??
+	use super::*;
+	use crate::multiform::World2Collumns3;
+	use crate::multiform::CollumnChunk16x16x256;
 
-	// use super::*;
-	// use crate::multiform::World2Collumns3;
-	// use crate::multiform::CollumnChunk16x16x256;
- //
-	// #[test]
-	// fn test_global_to_chunk_subchunk_1() {
-	// 	std::thread::Builder::new()
-	// 		.name(module_path!().into())
-	// 		.stack_size(2usize.pow(24) * 2)
-	// 		.spawn(|| {
-	// 			let mut world = World2Collumns3::<na::Vector<i32, 3>>::new();
- //
-	// 			world.chunk_insert(na::Vector::from([0, 0]), CollumnChunk16x16x256::from_fn(std::convert::identity));
- //
-	// 			for z in 0..256 {
-	// 				for y in 0..16{
-	// 					for x in 0..16 {
-	// 						let (chunk, subchunk) = world.global_to_chunk_subchunk(na::Vector::from([x, y, z]));
- //
-	// 						eprintln!("{:?} {:?}", chunk, subchunk);
-	// 					}
-	// 				}
-	// 			}
-	// 		})
-	// 		.expect("failed to spawn thread")
-	// 		.join()
-	// 		.unwrap();
-	// }
+	#[test]
+	fn test_global_to_chunk_subchunk() {
+		std::thread::Builder::new()
+			.name(module_path!().into())
+			.stack_size(2usize.pow(26))
+			.spawn(|| {
+				let mut world = World2Collumns3::new();
+
+				for y in -1..2 {
+					for x in -1..2 {
+						let chunk = na::Vector::from([x, y]);
+
+						world.chunk_insert(na::Vector::from(chunk), CollumnChunk16x16x256::from_fn(|subchunk| (chunk, subchunk)));
+					}
+				}
+
+				for z in 0..256 {
+					for y in -16..32 {
+						for x in -16..32 {
+							let (result_chunk, result_subchunk) = world.global_to_chunk_subchunk(na::Vector::from([x, y, z]));
+
+							let &(expected_chunk, expected_subchunk) = world.chunk(result_chunk).unwrap().get(result_subchunk).unwrap();
+
+							assert_eq!(result_chunk, expected_chunk);
+							assert_eq!(result_subchunk, expected_subchunk);
+						}
+					}
+				}
+			})
+			.expect("failed to spawn thread")
+			.join()
+			.unwrap();
+	}
 }
 
 
