@@ -1,5 +1,7 @@
 # Hypercube
 
+![badge](https://github.com/Mokuzzai/hypercube/actions/workflows/rust.yml/badge.svg)
+
 ## Todo
 ### create `OffsetShape<S: Shape, const D: usize>`
 a `Shape` offset by some amount
