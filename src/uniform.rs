@@ -63,9 +63,7 @@ impl<T, const S: usize, const D: usize, const C: usize> Chunk<D> for UniformChun
 	type Item = T;
 	type Shape = UniformShape<S, D>;
 
-	fn shape(&self) -> Self::Shape {
-		UniformShape
-	}
+	const SHAPE: Self::Shape = UniformShape;
 
 	fn index(&self, index: usize) -> Option<&Self::Item> {
 		self.buffer.get(index)

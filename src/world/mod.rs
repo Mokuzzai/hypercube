@@ -2,6 +2,7 @@ mod ordered_vector;
 
 use ordered_vector::OrderedVector;
 
+use crate::WorldCoordinate;
 use crate::na;
 use crate::Chunk;
 use crate::Shape;
@@ -62,46 +63,27 @@ impl<C: Chunk<V>, const E: usize, const V: usize, const W: usize> World<C, E, V>
 where
 	na::Const<E>: na::DimMax<na::Const<V>, Output = na::Const<W>>,
 {
-	pub fn global_to_chunk_subchunk(
+	pub fn world_to_chunk_block(
 		&self,
-		position: na::Vector<i32, W>,
-	) -> (na::Vector<i32, E>, na::Vector<i32, V>) {
-		let chunk_shape = <C::Shape as Shape<V>>::new().extents();
-
-		let chunk_shape_as_global = chunk_shape.resize_generic(na::Const::<W>, na::Const::<1>, 0);
-
-		// this subchunk might be negative and if it is it should be inversed
-		let mut subchunk_as_global = position.zip_map(&chunk_shape_as_global, std::ops::Rem::rem);
-
-		for (value, &extent) in subchunk_as_global
-			.iter_mut()
-			.zip(chunk_shape_as_global.iter())
-		{
-			*value = (*value + extent) % extent
-		}
-
-		let chunk_as_global = position.zip_map(&chunk_shape_as_global, std::ops::Div::div);
-
-		let subchunk = subchunk_as_global.resize_generic(na::Const::<V>, na::Const::<1>, 0);
-		let chunk = chunk_as_global.resize_generic(na::Const::<E>, na::Const::<1>, 0);
-
-		(chunk, subchunk)
+		world: na::Vector<i32, W>,
+	) -> WorldCoordinate<E, V> {
+		C::SHAPE.world_to_chunk_block(world)
 	}
-	pub fn global_to_chunk(&self, position: na::Vector<i32, W>) -> na::Vector<i32, E> {
-		self.global_to_chunk_subchunk(position).0
+	pub fn world_to_chunk(&self, position: na::Vector<i32, W>) -> na::Vector<i32, E> {
+		self.world_to_chunk_block(position).chunk
 	}
-	pub fn global_to_subchunk(&self, position: na::Vector<i32, W>) -> na::Vector<i32, V> {
-		self.global_to_chunk_subchunk(position).1
+	pub fn world_to_block(&self, position: na::Vector<i32, W>) -> na::Vector<i32, V> {
+		self.world_to_chunk_block(position).block
 	}
-	pub fn subchunk(&mut self, position: na::Vector<i32, W>) -> Option<&C::Item> {
-		let (chunk, subchunk) = self.global_to_chunk_subchunk(position);
+	pub fn block(&mut self, position: na::Vector<i32, W>) -> Option<&C::Item> {
+		let world = self.world_to_chunk_block(position);
 
-		self.chunk(chunk)?.get(subchunk)
+		self.chunk(world.chunk)?.get(world.block)
 	}
-	pub fn subchunk_mut(&mut self, position: na::Vector<i32, W>) -> Option<&mut C::Item> {
-		let (chunk, subchunk) = self.global_to_chunk_subchunk(position);
+	pub fn block_mut(&mut self, position: na::Vector<i32, W>) -> Option<&mut C::Item> {
+		let world = self.world_to_chunk_block(position);
 
-		self.chunk_mut(chunk)?.get_mut(subchunk)
+		self.chunk_mut(world.chunk)?.get_mut(world.block)
 	}
 }
 
@@ -131,6 +113,7 @@ mod tests {
 	use super::*;
 	use crate::multiform::CollumnChunk16x16x256;
 	use crate::multiform::World2Collumns3;
+	use crate::WorldCoordinate;
 
 	#[test]
 	/// This test finishes `ok` but might overflow its stack
@@ -147,7 +130,7 @@ mod tests {
 
 						world.chunk_insert(
 							na::Vector::from(chunk),
-							CollumnChunk16x16x256::from_positions(|subchunk| (chunk, subchunk)),
+							CollumnChunk16x16x256::from_positions(|block| WorldCoordinate { chunk, block }),
 						);
 					}
 				}
@@ -155,17 +138,16 @@ mod tests {
 				for z in 0..256 {
 					for y in -16..32 {
 						for x in -16..32 {
-							let (result_chunk, result_subchunk) =
-								world.global_to_chunk_subchunk(na::Vector::from([x, y, z]));
+							let result =
+								world.world_to_chunk_block(na::Vector::from([x, y, z]));
 
-							let &(expected_chunk, expected_subchunk) = world
-								.chunk(result_chunk)
+							let &expected = world
+								.chunk(result.chunk)
 								.unwrap()
-								.get(result_subchunk)
+								.get(result.block)
 								.unwrap();
 
-							assert_eq!(result_chunk, expected_chunk);
-							assert_eq!(result_subchunk, expected_subchunk);
+							assert_eq!(result, expected);
 						}
 					}
 				}

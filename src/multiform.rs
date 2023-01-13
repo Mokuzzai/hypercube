@@ -53,9 +53,7 @@ mod macros {
 				type Item = T;
 				type Shape = $Shape<$($N),*>;
 
-				fn shape(&self) -> Self::Shape {
-					$Shape
-				}
+				const SHAPE: Self::Shape = $Shape;
 
 				fn index(&self, index: ::std::primitive::usize) -> ::std::option::Option<&Self::Item> {
 					self.buffer.get(index)

@@ -6,7 +6,11 @@ pub trait Chunk<const D: usize> {
 	type Item;
 	type Shape: Shape<D>;
 
-	fn shape(&self) -> Self::Shape;
+	const SHAPE: Self::Shape;
+
+	fn shape(&self) -> Self::Shape {
+		Self::SHAPE
+	}
 
 	fn index(&self, index: usize) -> Option<&Self::Item>;
 	fn index_mut(&mut self, index: usize) -> Option<&mut Self::Item>;
@@ -45,6 +49,8 @@ impl<C, P> WithPayload<C, P> {
 impl<C: Chunk<D>, P, const D: usize> Chunk<D> for WithPayload<C, P> {
 	type Item = C::Item;
 	type Shape = C::Shape;
+
+	const SHAPE: Self::Shape = C::SHAPE;
 
 	fn shape(&self) -> Self::Shape {
 		self.chunk.shape()
