@@ -27,18 +27,6 @@ mod macros {
 				fn capacity(&self) -> ::std::primitive::usize {
 					1 $(* ::std::convert::identity::<::std::primitive::usize>($N))*
 				}
-
-				fn position_to_index(&self, position: $crate::na::Vector<::std::primitive::i32, $D>) -> ::std::option::Option<::std::primitive::usize> {
-					crate::position_index_conversion::multiform::position_to_index(
-						[$($N),*],
-						$crate::na::itou($crate::na::vtoa(position))?,
-					)
-				}
-				fn index_to_position(&self, index: ::std::primitive::usize) -> ::std::option::Option<$crate::na::Vector<::std::primitive::i32, $D>> {
-					let src = crate::position_index_conversion::multiform::index_to_position::<{ $D }>([$($N),*], index)?;
-
-					::std::option::Option::Some($crate::na::atov($crate::na::utoi(src)?))
-				}
 			}
 
 
