@@ -66,7 +66,7 @@ where
 		&self,
 		position: na::Vector<i32, W>,
 	) -> (na::Vector<i32, E>, na::Vector<i32, V>) {
-		let chunk_shape = <C::Shape as Shape<V>>::new().shape();
+		let chunk_shape = <C::Shape as Shape<V>>::new().extents();
 
 		let chunk_shape_as_global = chunk_shape.resize_generic(na::Const::<W>, na::Const::<1>, 0);
 

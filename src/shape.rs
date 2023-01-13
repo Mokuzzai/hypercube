@@ -3,7 +3,7 @@ use crate::na;
 pub trait Shape<const D: usize> {
 	fn new() -> Self;
 
-	fn shape(&self) -> na::Vector<i32, D>;
+	fn extents(&self) -> na::Vector<i32, D>;
 
 	fn capacity(&self) -> usize;
 

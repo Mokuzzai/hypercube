@@ -2,8 +2,7 @@ use crate::na;
 use crate::Chunk;
 use crate::Shape;
 
-/// [`Shape`]: A hypercube with `D` dimensions and side length of `S`
-
+// /// [`Shape`]: A hypercube with `D` dimensions and side length of `S`
 #[derive(Debug, Default, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash)]
 pub struct UniformShape<const S: usize, const D: usize>;
 
@@ -12,7 +11,7 @@ impl<const S: usize, const D: usize> Shape<D> for UniformShape<S, D> {
 		UniformShape
 	}
 
-	fn shape(&self) -> na::Vector<i32, D> {
+	fn extents(&self) -> na::Vector<i32, D> {
 		na::Vector::from_element(S as i32)
 	}
 
@@ -35,7 +34,7 @@ impl<const S: usize, const D: usize> Shape<D> for UniformShape<S, D> {
 
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash)]
 pub struct UniformChunk<T, const S: usize, const D: usize, const C: usize> {
-	buffer: [T; C],
+	pub buffer: [T; C],
 }
 
 /// # Panics
@@ -48,7 +47,7 @@ impl<T, const S: usize, const D: usize, const C: usize> UniformChunk<T, S, D, C>
 	pub fn new(buffer: [T; C]) -> Self {
 		debug_assert_eq!(C, S.pow(D as u32));
 		debug_assert_ne!(D, 0);
-		debug_assert!(D <= u32::MAX as usize);
+		debug_assert!(D <= i32::MAX as usize);
 
 		Self { buffer }
 	}
