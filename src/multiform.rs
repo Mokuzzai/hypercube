@@ -57,9 +57,11 @@ impl<T> CollumnChunk16x16x256<T> {
 	pub fn new(buffer: [T; 16 * 16 * 256]) -> Self {
 		Self { buffer }
 	}
-
-	pub fn from_fn(mut f: impl FnMut(na::Vector<i32, 3>) -> T) -> Self {
-		Self::new(std::array::from_fn(|index| f(MultiformShape3::<16, 16, 256>.index_to_position(index).unwrap())))
+	pub fn from_indices(f: impl FnMut(usize) -> T) -> Self {
+		Self::new(std::array::from_fn(f))
+	}
+	pub fn from_positions(mut f: impl FnMut(na::Vector<i32, 3>) -> T) -> Self {
+		Self::from_indices(|index| f(MultiformShape3::<16, 16, 256>.index_to_position(index).unwrap()))
 	}
 }
 

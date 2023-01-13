@@ -124,6 +124,7 @@ mod tests {
 	use crate::multiform::CollumnChunk16x16x256;
 
 	#[test]
+	/// This test finishes `ok` but might overflow its stack
 	fn test_global_to_chunk_subchunk() {
 		std::thread::Builder::new()
 			.name(module_path!().into())
@@ -135,7 +136,7 @@ mod tests {
 					for x in -1..2 {
 						let chunk = na::Vector::from([x, y]);
 
-						world.chunk_insert(na::Vector::from(chunk), CollumnChunk16x16x256::from_fn(|subchunk| (chunk, subchunk)));
+						world.chunk_insert(na::Vector::from(chunk), CollumnChunk16x16x256::from_positions(|subchunk| (chunk, subchunk)));
 					}
 				}
 

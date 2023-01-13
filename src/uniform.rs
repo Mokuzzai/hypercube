@@ -1,5 +1,6 @@
 use crate::na;
 use crate::Shape;
+use crate::Chunk;
 
 /// [`Shape`]: A hypercube with `D` dimensions and side length of `S`
 
@@ -32,42 +33,46 @@ impl<const S: usize, const D: usize> Shape<D> for UniformShape<S, D> {
 	}
 }
 
-mod macros {
-	#![no_implicit_prelude]
-
-	#[macro_export]
-	macro_rules! uniform_chunk {
-		($vis:vis $Chunk:ident[$S:expr; $D:expr] $(, $World:ident)? $(,)?) => {
-			#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash)]
-			$vis struct $Chunk<T> {
-				buffer: [T; ::std::convert::identity::<usize>($S).pow(::std::convert::identity::<usize>($D) as ::std::primitive::u32)],
-			}
-
-			impl<T> $crate::Chunk<$D> for $Chunk<T> {
-				type Item = T;
-				type Shape = $crate::uniform::UniformShape<{ $S }, { $D }>;
-
-				fn shape(&self) -> Self::Shape {
-					$crate::uniform::UniformShape
-				}
-				fn index(&self, index: ::std::primitive::usize) -> ::std::option::Option<&Self::Item> {
-					self.buffer.get(index)
-				}
-				fn index_mut(&mut self, index: ::std::primitive::usize) -> ::std::option::Option<&mut Self::Item> {
-					self.buffer.get_mut(index)
-				}
-			}
-
-			$($vis type $World<T> = $crate::World<$Chunk<T>, $D, $D>;)*
-
-			// TODO impl `Default`
-		}
-	}
-
-	uniform_chunk! { TestChunk[16; 2] }
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash)]
+pub struct UniformChunk<T, const S: usize, const D: usize, const C: usize> {
+	buffer: [T; C],
 }
 
-crate::uniform_chunk! { pub UniformChunk2x16[16; 2], UniformWorld2x16 }
-crate::uniform_chunk! { pub UniformChunk3x16[16; 3], UniformWorld3x16 }
-crate::uniform_chunk! { pub UniformChunk2x32[32; 2], UniformWorld2x32 }
-crate::uniform_chunk! { pub UniformChunk3x32[32; 3], UniformWorld3x32 }
+impl<T, const S: usize, const D: usize, const C: usize> UniformChunk<T, S, D, C> {
+	pub fn new(buffer: [T; C]) -> Self {
+		debug_assert_eq!(C, S.pow(D as u32));
+
+		Self { buffer }
+	}
+	pub fn from_indices(f: impl FnMut(usize) -> T) -> Self {
+		Self::new(std::array::from_fn(f))
+	}
+	pub fn from_positions(mut f: impl FnMut(na::Vector<i32, D>) -> T) -> Self {
+		Self::from_indices(|index| f(UniformShape::<S, D>.index_to_position(index).unwrap()))
+	}
+}
+
+impl<T, const S: usize, const D: usize, const C: usize> Chunk<D> for UniformChunk<T, S, D, C> {
+	type Item = T;
+	type Shape = UniformShape<S, D>;
+
+	fn shape(&self) -> Self::Shape {
+		UniformShape
+	}
+
+	fn index(&self, index: usize) -> Option<&Self::Item> {
+		self.buffer.get(index)
+	}
+	fn index_mut(&mut self, index: usize) -> Option<&mut Self::Item> {
+		self.buffer.get_mut(index)
+	}
+}
+
+impl<T, const S: usize, const D: usize, const C: usize> Default for UniformChunk<T, S, D, C>
+where
+	T: Default,
+{
+	fn default() -> Self {
+		Self::new(std::array::from_fn(|_| Default::default()))
+	}
+}
