@@ -2,10 +2,10 @@ mod ordered_vector;
 
 use ordered_vector::OrderedVector;
 
-use crate::WorldCoordinate;
 use crate::na;
 use crate::Chunk;
 use crate::Shape;
+use crate::WorldCoordinate;
 
 use std::collections::BTreeMap;
 
@@ -63,10 +63,7 @@ impl<C: Chunk<V>, const E: usize, const V: usize, const W: usize> World<C, E, V>
 where
 	na::Const<E>: na::DimMax<na::Const<V>, Output = na::Const<W>>,
 {
-	pub fn world_to_chunk_block(
-		&self,
-		world: na::Vector<i32, W>,
-	) -> WorldCoordinate<E, V> {
+	pub fn world_to_chunk_block(&self, world: na::Vector<i32, W>) -> WorldCoordinate<E, V> {
 		C::SHAPE.world_to_chunk_block(world)
 	}
 	pub fn world_to_chunk(&self, position: na::Vector<i32, W>) -> na::Vector<i32, E> {
@@ -107,4 +104,3 @@ const _: () = {
 		}
 	}
 };
-

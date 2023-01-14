@@ -27,8 +27,8 @@ pub trait Chunk<const D: usize> {
 		self.index_mut(index)
 	}
 
-	fn positions(&self) -> Positions<Self::Shape, D> {
-		Positions::new(self.shape())
+	fn positions(&self) -> Positions<D> {
+		self.shape().positions()
 	}
 }
 

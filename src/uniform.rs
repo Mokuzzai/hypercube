@@ -7,12 +7,12 @@ use crate::Shape;
 pub struct UniformShape<const S: usize, const D: usize>;
 
 impl<const S: usize, const D: usize> Shape<D> for UniformShape<S, D> {
-	fn new() -> Self {
-		UniformShape
-	}
+	// fn new() -> Self {
+	// 	UniformShape
+	// }
 
-	fn extents(&self) -> na::Vector<i32, D> {
-		na::Vector::from_element(S as i32)
+	fn extents(&self) -> na::Vector<usize, D> {
+		na::Vector::from_element(S)
 	}
 
 	fn capacity(&self) -> usize {

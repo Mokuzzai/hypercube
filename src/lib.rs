@@ -14,6 +14,9 @@ mod world;
 
 mod na;
 
+pub use shape::DynamicMultiformShape;
+pub use shape::DynamicShape;
+pub use shape::DynamicUniformShape;
 pub use shape::Shape;
 pub use shape::WorldCoordinate;
 
@@ -32,4 +35,3 @@ pub mod multiform;
 
 /// Helper methods for implementing [`Shape`]
 pub mod position_index_conversion;
-
