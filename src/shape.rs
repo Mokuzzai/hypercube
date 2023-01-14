@@ -11,7 +11,7 @@ pub trait Shape<const B: usize>: Sized {
 	fn extents(&self) -> na::Vector<usize, B>;
 
 	fn positions(&self) -> Positions<B> {
-		Positions::new(self)
+		Positions::new(self.extents())
 	}
 	fn capacity(&self) -> usize {
 		self.extents().into_iter().product()

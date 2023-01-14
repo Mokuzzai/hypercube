@@ -25,6 +25,7 @@ pub use chunk::Chunk;
 pub use chunk::WithPayload;
 
 pub use world::World;
+pub use world::UniformWorld;
 
 pub use positions::Positions;
 

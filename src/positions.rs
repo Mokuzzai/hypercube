@@ -6,22 +6,24 @@ use std::ops::Range;
 
 /// [`Iterator`] over all the possible positions of a [`Shape`]
 #[derive(Debug, Default, Eq, PartialEq, Clone)]
-pub struct Positions<const D: usize> {
+pub struct Positions<const B: usize> {
 	inner: Range<usize>,
-	shape: DynamicMultiformShape<D>,
+	shape: DynamicMultiformShape<B>,
 }
 
-impl<const D: usize> Positions<D> {
-	pub fn new<S: Shape<D>>(shape: &S) -> Self {
+impl<const B: usize> Positions<B> {
+	pub fn new(extents: na::Vector<usize, B>) -> Self {
+		let shape = DynamicMultiformShape::new(extents);
+
 		Self {
 			inner: 0..shape.capacity(),
-			shape: DynamicMultiformShape::new(shape.extents()),
+			shape
 		}
 	}
 }
 
-impl<const D: usize> Iterator for Positions<D> {
-	type Item = na::Vector<i32, D>;
+impl<const B: usize> Iterator for Positions<B> {
+	type Item = na::Vector<i32, B>;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		let next = self.inner.next()?;

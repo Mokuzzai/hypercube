@@ -109,3 +109,5 @@ const _: () = {
 		}
 	}
 };
+
+pub type UniformWorld<T, const D: usize> = World<T, D, D, D>;
