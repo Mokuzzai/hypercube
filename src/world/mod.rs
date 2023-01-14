@@ -95,6 +95,19 @@ where
 	}
 }
 
+impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> Clone for World<T, W, C, B>
+where
+	<T as Chunk<B>>::Shape: Clone,
+	T: Clone
+{
+	fn clone(&self) -> Self {
+		Self {
+			chunks: self.chunks.clone(),
+			shape: self.shape.clone(),
+		}
+	}
+}
+
 const _: () = {
 	use std::fmt::*;
 

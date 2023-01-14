@@ -3,6 +3,7 @@ use crate::Shape;
 
 use std::cmp::Ordering;
 
+#[derive(Clone)]
 pub struct OrderedVector<const D: usize> {
 	pub coordinates: na::Vector<i32, D>,
 }
