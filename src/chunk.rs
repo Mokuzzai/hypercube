@@ -21,6 +21,9 @@ pub trait Chunk<const B: usize> {
 
 		self.index_mut(index)
 	}
+	fn replace(&mut self, position: na::Vector<i32, B>, with: Self::Item) -> Option<Self::Item> {
+		Some(std::mem::replace(self.get_mut(position)?, with))
+	}
 	fn positions(&self) -> Positions<B> {
 		self.shape().positions()
 	}
