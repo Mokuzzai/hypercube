@@ -1,39 +1,35 @@
 use crate::na;
 use crate::Chunk;
 use crate::Shape;
+use crate::DynamicUniformShape;
 
 // /// [`Shape`]: A hypercube with `D` dimensions and side length of `S`
 #[derive(Debug, Default, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash)]
 pub struct UniformShape<const S: usize, const D: usize>;
 
-impl<const S: usize, const D: usize> Shape<D> for UniformShape<S, D> {
+impl<const S: usize, const B: usize> Shape<B> for UniformShape<S, B> {
 	// fn new() -> Self {
 	// 	UniformShape
 	// }
 
-	fn extents(&self) -> na::Vector<usize, D> {
+	fn extents(&self) -> na::Vector<usize, B> {
 		na::Vector::from_element(S)
 	}
 
 	fn capacity(&self) -> usize {
-		S.pow(D as u32)
+		S.pow(B as u32)
 	}
 
-	fn position_to_index(&self, position: na::Vector<i32, D>) -> Option<usize> {
-		crate::position_index_conversion::uniform::position_to_index(
-			S,
-			na::itou(na::vtoa(position))?,
-		)
+	fn position_to_index(&self, block: na::Vector<i32, B>) -> Option<usize> {
+		DynamicUniformShape::<B>::new(S).position_to_index(block)
 	}
-	fn index_to_position(&self, index: usize) -> Option<na::Vector<i32, D>> {
-		let src = crate::position_index_conversion::uniform::index_to_position::<D>(S, index)?;
-
-		Some(na::atov(na::utoi(src)?))
+	fn index_to_position(&self, index: usize) -> Option<na::Vector<i32, B>> {
+		DynamicUniformShape::<B>::new(S).index_to_position(index)
 	}
 }
 
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash)]
-pub struct UniformChunk<T, const S: usize, const D: usize, const C: usize> {
+pub struct UniformChunk<T, const S: usize, const B: usize, const C: usize> {
 	pub buffer: [T; C],
 }
 
@@ -41,27 +37,27 @@ pub struct UniformChunk<T, const S: usize, const D: usize, const C: usize> {
 ///
 /// if `debug_assertions` are enabled constructors panic if:
 /// * `S.pow(D as u32) != C`
-/// * `D == 0`
+/// * `B == 0`
 /// * `D > u32::MAX`
-impl<T, const S: usize, const D: usize, const C: usize> UniformChunk<T, S, D, C> {
+impl<T, const S: usize, const B: usize, const C: usize> UniformChunk<T, S, B, C> {
 	pub fn new(buffer: [T; C]) -> Self {
-		debug_assert_eq!(C, S.pow(D as u32));
-		debug_assert_ne!(D, 0);
-		debug_assert!(D <= i32::MAX as usize);
+		debug_assert_eq!(C, S.pow(B as u32));
+		debug_assert_ne!(B, 0);
+		debug_assert!(B <= i32::MAX as usize);
 
 		Self { buffer }
 	}
 	pub fn from_indices(f: impl FnMut(usize) -> T) -> Self {
 		Self::new(std::array::from_fn(f))
 	}
-	pub fn from_positions(mut f: impl FnMut(na::Vector<i32, D>) -> T) -> Self {
-		Self::from_indices(|index| f(UniformShape::<S, D>.index_to_position(index).unwrap()))
+	pub fn from_positions(mut f: impl FnMut(na::Vector<i32, B>) -> T) -> Self {
+		Self::from_indices(|index| f(UniformShape::<S, B>.index_to_position(index).unwrap()))
 	}
 }
 
-impl<T, const S: usize, const D: usize, const C: usize> Chunk<D> for UniformChunk<T, S, D, C> {
+impl<T, const S: usize, const B: usize, const C: usize> Chunk<B> for UniformChunk<T, S, B, C> {
 	type Item = T;
-	type Shape = UniformShape<S, D>;
+	type Shape = UniformShape<S, B>;
 
 	const SHAPE: Self::Shape = UniformShape;
 
@@ -73,7 +69,7 @@ impl<T, const S: usize, const D: usize, const C: usize> Chunk<D> for UniformChun
 	}
 }
 
-impl<T, const S: usize, const D: usize, const C: usize> Default for UniformChunk<T, S, D, C>
+impl<T, const S: usize, const B: usize, const C: usize> Default for UniformChunk<T, S, B, C>
 where
 	T: Default,
 {

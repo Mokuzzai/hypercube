@@ -8,7 +8,6 @@ pub struct WorldCoordinate<const C: usize, const B: usize> {
 }
 
 pub trait Shape<const B: usize>: Sized {
-	/// All cordinates must be positive
 	fn extents(&self) -> na::Vector<usize, B>;
 
 	fn positions(&self) -> Positions<B> {
@@ -17,22 +16,19 @@ pub trait Shape<const B: usize>: Sized {
 	fn capacity(&self) -> usize {
 		self.extents()
 			.into_iter()
-			.map(|&c| usize::try_from(c).unwrap())
 			.product()
 	}
 	fn position_to_index(&self, block: na::Vector<i32, B>) -> Option<usize> {
-		crate::position_index_conversion::multiform::position_to_index(
-			na::vtoa(self.extents()),
-			na::itou(na::vtoa(block)).unwrap(),
+		crate::position_index_conversion::position_to_index(
+			self.extents(),
+			block,
 		)
 	}
 	fn index_to_position(&self, index: usize) -> Option<na::Vector<i32, B>> {
-		let src = crate::position_index_conversion::multiform::index_to_position(
-			na::vtoa(self.extents()),
+		crate::position_index_conversion::index_to_position(
+			self.extents(),
 			index,
-		)?;
-
-		Some(na::atov(na::utoi(src).unwrap()))
+		)
 	}
 	fn world_to_chunk_block<const W: usize, const C: usize>(
 		&self,
@@ -97,18 +93,6 @@ impl<const B: usize> Shape<B> for DynamicUniformShape<B> {
 	fn capacity(&self) -> usize {
 		self.stride.pow(B as u32)
 	}
-
-	fn position_to_index(&self, block: na::Vector<i32, B>) -> Option<usize> {
-		crate::position_index_conversion::uniform::position_to_index(
-			self.stride,
-			na::itou(na::vtoa(block)).unwrap(),
-		)
-	}
-	fn index_to_position(&self, index: usize) -> Option<na::Vector<i32, B>> {
-		let src = crate::position_index_conversion::uniform::index_to_position(self.stride, index)?;
-
-		Some(na::atov(na::utoi(src).unwrap()))
-	}
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -130,7 +114,7 @@ impl<const B: usize> Default for DynamicMultiformShape<B> {
 
 impl<const B: usize> Shape<B> for DynamicMultiformShape<B> {
 	fn extents(&self) -> na::Vector<usize, B> {
-		self.extents.cast()
+		self.extents
 	}
 }
 
@@ -154,53 +138,10 @@ impl<const B: usize> Shape<B> for DynamicShape<B> {
 			Self::Multiform(multiform) => multiform.extents(),
 		}
 	}
-	fn positions(&self) -> Positions<B> {
-		match self {
-			Self::Uniform(uniform) => uniform.positions(),
-			Self::Multiform(multiform) => multiform.positions(),
-		}
-	}
 	fn capacity(&self) -> usize {
 		match self {
 			Self::Uniform(uniform) => uniform.capacity(),
 			Self::Multiform(multiform) => multiform.capacity(),
-		}
-	}
-	fn position_to_index(&self, block: na::Vector<i32, B>) -> Option<usize> {
-		match self {
-			Self::Uniform(uniform) => uniform.position_to_index(block),
-			Self::Multiform(multiform) => multiform.position_to_index(block),
-		}
-	}
-	fn index_to_position(&self, index: usize) -> Option<na::Vector<i32, B>> {
-		match self {
-			Self::Uniform(uniform) => uniform.index_to_position(index),
-			Self::Multiform(multiform) => multiform.index_to_position(index),
-		}
-	}
-	fn world_to_chunk_block<const W: usize, const C: usize>(
-		&self,
-		world: na::Vector<i32, W>,
-	) -> WorldCoordinate<C, B>
-	where
-		na::Const<C>: na::DimMax<na::Const<B>, Output = na::Const<W>>,
-	{
-		match self {
-			Self::Uniform(uniform) => uniform.world_to_chunk_block(world),
-			Self::Multiform(multiform) => multiform.world_to_chunk_block(world),
-		}
-	}
-	fn chunk_block_to_world<const W: usize, const C: usize>(
-		&self,
-		chunk: na::Vector<i32, C>,
-		block: na::Vector<i32, B>,
-	) -> na::Vector<i32, W>
-	where
-		na::Const<C>: na::DimMax<na::Const<B>, Output = na::Const<W>>,
-	{
-		match self {
-			Self::Uniform(uniform) => uniform.chunk_block_to_world(chunk, block),
-			Self::Multiform(multiform) => multiform.chunk_block_to_world(chunk, block),
 		}
 	}
 }

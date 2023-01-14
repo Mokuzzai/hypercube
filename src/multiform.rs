@@ -17,15 +17,8 @@ mod macros {
 			pub struct $Shape<$(const $N: usize),*>;
 
 			impl<$(const $N: ::std::primitive::usize),*> $crate::Shape<$D> for $Shape<$($N),*> {
-				// fn new() -> Self {
-				// 	$Shape
-				// }
 				fn extents(&self) -> $crate::na::Vector<::std::primitive::usize, $D> {
 					$crate::na::Vector::from([$($N),*])
-				}
-
-				fn capacity(&self) -> ::std::primitive::usize {
-					1 $(* ::std::convert::identity::<::std::primitive::usize>($N))*
 				}
 			}
 
