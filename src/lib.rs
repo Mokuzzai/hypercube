@@ -11,6 +11,7 @@ mod chunk;
 mod positions;
 mod shape;
 mod world;
+mod position_index_conversion;
 
 mod na;
 
