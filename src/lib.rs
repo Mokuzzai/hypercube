@@ -32,6 +32,3 @@ pub mod uniform;
 
 /// Implementation of multiform [`Chunk`]s and [`World`]s
 pub mod multiform;
-
-/// Helper methods for implementing [`Shape`]
-pub mod position_index_conversion;
