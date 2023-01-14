@@ -1,25 +1,19 @@
 use crate::na;
 use crate::Chunk;
-use crate::Shape;
 use crate::DynamicUniformShape;
+use crate::Shape;
 
 // /// [`Shape`]: A hypercube with `D` dimensions and side length of `S`
 #[derive(Debug, Default, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash)]
 pub struct UniformShape<const S: usize, const D: usize>;
 
 impl<const S: usize, const B: usize> Shape<B> for UniformShape<S, B> {
-	// fn new() -> Self {
-	// 	UniformShape
-	// }
-
 	fn extents(&self) -> na::Vector<usize, B> {
 		na::Vector::from_element(S)
 	}
-
 	fn capacity(&self) -> usize {
 		S.pow(B as u32)
 	}
-
 	fn position_to_index(&self, block: na::Vector<i32, B>) -> Option<usize> {
 		DynamicUniformShape::<B>::new(S).position_to_index(block)
 	}
@@ -59,7 +53,9 @@ impl<T, const S: usize, const B: usize, const C: usize> Chunk<B> for UniformChun
 	type Item = T;
 	type Shape = UniformShape<S, B>;
 
-	const SHAPE: Self::Shape = UniformShape;
+	fn shape(&self) -> &Self::Shape {
+		&UniformShape
+	}
 
 	fn index(&self, index: usize) -> Option<&Self::Item> {
 		self.buffer.get(index)

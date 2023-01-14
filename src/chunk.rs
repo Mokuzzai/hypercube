@@ -6,11 +6,7 @@ pub trait Chunk<const D: usize> {
 	type Item;
 	type Shape: Shape<D>;
 
-	const SHAPE: Self::Shape;
-
-	fn shape(&self) -> Self::Shape {
-		Self::SHAPE
-	}
+	fn shape(&self) -> &Self::Shape;
 
 	fn index(&self, index: usize) -> Option<&Self::Item>;
 	fn index_mut(&mut self, index: usize) -> Option<&mut Self::Item>;
@@ -20,13 +16,11 @@ pub trait Chunk<const D: usize> {
 
 		self.index(index)
 	}
-
 	fn get_mut(&mut self, position: na::Vector<i32, D>) -> Option<&mut Self::Item> {
 		let index = self.shape().position_to_index(position)?;
 
 		self.index_mut(index)
 	}
-
 	fn positions(&self) -> Positions<D> {
 		self.shape().positions()
 	}
@@ -50,25 +44,22 @@ impl<C: Chunk<D>, P, const D: usize> Chunk<D> for WithPayload<C, P> {
 	type Item = C::Item;
 	type Shape = C::Shape;
 
-	const SHAPE: Self::Shape = C::SHAPE;
-
-	fn shape(&self) -> Self::Shape {
+	fn shape(&self) -> &Self::Shape {
 		self.chunk.shape()
 	}
-
 	fn index(&self, index: usize) -> Option<&Self::Item> {
 		self.chunk.index(index)
 	}
-
 	fn index_mut(&mut self, index: usize) -> Option<&mut Self::Item> {
 		self.chunk.index_mut(index)
 	}
-
 	fn get(&self, position: na::Vector<i32, D>) -> Option<&Self::Item> {
 		self.chunk.get(position)
 	}
-
 	fn get_mut(&mut self, position: na::Vector<i32, D>) -> Option<&mut Self::Item> {
 		self.chunk.get_mut(position)
+	}
+	fn positions(&self) -> Positions<D> {
+		self.chunk.positions()
 	}
 }

@@ -1,6 +1,6 @@
 use crate::na;
-use crate::Shape;
 use crate::DynamicMultiformShape;
+use crate::Shape;
 
 use std::ops::Range;
 

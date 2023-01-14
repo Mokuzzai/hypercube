@@ -34,7 +34,9 @@ mod macros {
 				type Item = T;
 				type Shape = $Shape<$($N),*>;
 
-				const SHAPE: Self::Shape = $Shape;
+				fn shape(&self) -> &Self::Shape {
+					&$Shape
+				}
 
 				fn index(&self, index: ::std::primitive::usize) -> ::std::option::Option<&Self::Item> {
 					self.buffer.get(index)
@@ -85,4 +87,4 @@ crate::multiform_chunk! { MultiformShape4, MultiformChunk4, [X, Y, Z, W; 4] }
 
 pub type CollumnChunk16x16x256<T> = MultiformChunk3<T, 16, 16, 256, { 16 * 16 * 256 }>;
 
-pub type World2Collumns3<T> = World<CollumnChunk16x16x256<T>, 2, 3>;
+pub type World2Collumns3<T> = World<CollumnChunk16x16x256<T>, 3, 2, 3>;

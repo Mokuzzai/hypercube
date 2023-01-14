@@ -14,28 +14,21 @@ pub trait Shape<const B: usize>: Sized {
 		Positions::new(self)
 	}
 	fn capacity(&self) -> usize {
-		self.extents()
-			.into_iter()
-			.product()
+		self.extents().into_iter().product()
 	}
 	fn position_to_index(&self, block: na::Vector<i32, B>) -> Option<usize> {
-		crate::position_index_conversion::position_to_index(
-			self.extents(),
-			block,
-		)
+		crate::position_index_conversion::position_to_index(self.extents(), block)
 	}
 	fn index_to_position(&self, index: usize) -> Option<na::Vector<i32, B>> {
-		crate::position_index_conversion::index_to_position(
-			self.extents(),
-			index,
-		)
+		crate::position_index_conversion::index_to_position(self.extents(), index)
 	}
 	fn world_to_chunk_block<const W: usize, const C: usize>(
 		&self,
 		world: na::Vector<i32, W>,
 	) -> WorldCoordinate<C, B>
 	where
-		na::Const<C>: na::DimMax<na::Const<B>, Output = na::Const<W>>,
+		na::Const<B>: na::DimMax<na::Const<W>, Output = na::Const<W>>,
+		na::Const<C>: na::DimMax<na::Const<W>, Output = na::Const<W>>,
 	{
 		let chunk_shape = self.extents().cast::<i32>();
 
@@ -61,7 +54,8 @@ pub trait Shape<const B: usize>: Sized {
 		block: na::Vector<i32, B>,
 	) -> na::Vector<i32, W>
 	where
-		na::Const<C>: na::DimMax<na::Const<B>, Output = na::Const<W>>,
+		na::Const<B>: na::DimMax<na::Const<W>, Output = na::Const<W>>,
+		na::Const<C>: na::DimMax<na::Const<W>, Output = na::Const<W>>,
 	{
 		let chunk_shape = self.extents().cast::<i32>();
 
@@ -130,7 +124,6 @@ impl<const B: usize> Default for DynamicShape<B> {
 	}
 }
 
-
 impl<const B: usize> Shape<B> for DynamicShape<B> {
 	fn extents(&self) -> na::Vector<usize, B> {
 		match self {
@@ -161,7 +154,7 @@ mod tests {
 			.name(module_path!().into())
 			.stack_size(2usize.pow(26))
 			.spawn(|| {
-				let mut world = World2Collumns3::new();
+				let mut world = World2Collumns3::default();
 
 				for y in -1..2 {
 					for x in -1..2 {
