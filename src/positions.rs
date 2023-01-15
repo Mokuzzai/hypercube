@@ -17,7 +17,7 @@ impl<const B: usize> Positions<B> {
 
 		Self {
 			inner: 0..shape.capacity(),
-			shape
+			shape,
 		}
 	}
 }
