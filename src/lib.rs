@@ -27,6 +27,7 @@ pub use shape::DynamicMultiformShape;
 pub use shape::DynamicShape;
 pub use shape::DynamicUniformShape;
 pub use shape::Shape;
+pub use shape::UniformShape;
 pub use shape::WorldCoordinate;
 
 pub use chunk::Chunk;

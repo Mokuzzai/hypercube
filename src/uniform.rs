@@ -22,6 +22,12 @@ impl<const S: usize, const B: usize> Shape<B> for UniformShape<S, B> {
 	}
 }
 
+impl<const S: usize, const B: usize> crate::UniformShape<B> for UniformShape<S, B> {
+	fn stride(&self) -> usize {
+		S
+	}
+}
+
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash)]
 pub struct UniformChunk<T, const S: usize, const B: usize, const C: usize> {
 	pub buffer: [T; C],

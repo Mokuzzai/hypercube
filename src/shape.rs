@@ -68,6 +68,10 @@ pub trait Shape<const B: usize>: Sized {
 	}
 }
 
+pub trait UniformShape<const B: usize>: Shape<B> {
+	fn stride(&self) -> usize;
+}
+
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq)]
 pub struct DynamicUniformShape<const B: usize> {
 	stride: usize,
@@ -88,6 +92,14 @@ impl<const B: usize> Shape<B> for DynamicUniformShape<B> {
 		self.stride.pow(B as u32)
 	}
 }
+
+impl<const B: usize> UniformShape<B> for DynamicUniformShape<B> {
+	fn stride(&self) -> usize {
+		self.stride
+	}
+}
+
+
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct DynamicMultiformShape<const B: usize> {
