@@ -8,13 +8,20 @@
 #![warn(missing_debug_implementations)]
 
 mod chunk;
-mod ctx;
 mod position_index_conversion;
 mod positions;
 mod shape;
 mod world;
 
 mod na;
+
+pub mod ctx;
+
+/// Implementation of uniform [`Chunk`]s and [`World`]s
+pub mod uniform;
+
+/// Implementation of multiform [`Chunk`]s and [`World`]s
+pub mod multiform;
 
 pub use shape::DynamicMultiformShape;
 pub use shape::DynamicShape;
@@ -30,8 +37,3 @@ pub use world::World;
 
 pub use positions::Positions;
 
-/// Implementation of uniform [`Chunk`]s and [`World`]s
-pub mod uniform;
-
-/// Implementation of multiform [`Chunk`]s and [`World`]s
-pub mod multiform;
