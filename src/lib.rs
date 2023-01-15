@@ -8,10 +8,11 @@
 #![warn(missing_debug_implementations)]
 
 mod chunk;
+mod ctx;
+mod position_index_conversion;
 mod positions;
 mod shape;
 mod world;
-mod position_index_conversion;
 
 mod na;
 
@@ -24,8 +25,8 @@ pub use shape::WorldCoordinate;
 pub use chunk::Chunk;
 pub use chunk::WithPayload;
 
-pub use world::World;
 pub use world::UniformWorld;
+pub use world::World;
 
 pub use positions::Positions;
 
