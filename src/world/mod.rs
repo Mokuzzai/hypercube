@@ -3,17 +3,18 @@ mod ordered_vector;
 use ordered_vector::OrderedVector;
 
 use crate::na;
+use crate::nd;
+
+use crate::Chunk;
 
 use std::collections::BTreeMap;
 
-pub type UniformArray<T, const D: usize> = ndarray::Array::<T, [usize; D]>;
-
-/// * `T`: Block type
-/// * `C`: `Chunk`space dimensions
-/// * `B`: `Block`space dimensions
+/// * `T`: [`Chunk`] type
+/// * `C`: [`Chunk`] space dimensions
+/// * `B`: `Block` space dimensions
 #[derive(Clone)]
 pub struct World<T, const C: usize, const B: usize> {
-	chunks: BTreeMap<OrderedVector<C>, UniformArray<T, B>>,
+	chunks: BTreeMap<OrderedVector<C>, T>,
 	chunk_stride: usize,
 }
 
@@ -24,37 +25,37 @@ impl<T, const C: usize, const B: usize> World<T, C, B> {
 			chunk_stride,
 		}
 	}
-	pub fn chunk(&self, position: na::Vector<i32, C>) -> Option<&UniformArray<T, B>> {
+	pub fn chunk(&self, position: na::Vector<i32, C>) -> Option<&T> {
 		self.chunks.get(&OrderedVector::new(position))
 	}
-	pub fn chunk_mut(&mut self, position: na::Vector<i32, C>) -> Option<&mut UniformArray<T, B>> {
+	pub fn chunk_mut(&mut self, position: na::Vector<i32, C>) -> Option<&mut T> {
 		self.chunks.get_mut(&OrderedVector::new(position))
 	}
-	pub fn chunk_insert(&mut self, position: na::Vector<i32, C>, chunk: UniformArray<T, B>) -> Option<UniformArray<T, B>> {
+	pub fn chunk_insert(&mut self, position: na::Vector<i32, C>, chunk: T) -> Option<T> {
 		self.chunks.insert(OrderedVector::new(position), chunk)
 	}
 	pub fn chunk_or_insert_with(
 		&mut self,
 		position: na::Vector<i32, C>,
-		chunk: impl FnMut() -> UniformArray<T, B>,
-	) -> &mut UniformArray<T, B> {
+		chunk: impl FnMut() -> T,
+	) -> &T {
 		self.chunks
 			.entry(OrderedVector::new(position))
 			.or_insert_with(chunk)
 	}
-	pub fn iter(&self) -> impl Iterator<Item = (&na::Vector<i32, C>, &UniformArray<T, B>)> {
+	pub fn iter(&self) -> impl Iterator<Item = (&na::Vector<i32, C>, &T)> {
 		self.chunks.iter().map(|(a, b)| (&a.coordinates, b))
 	}
-	pub fn iter_mut(&mut self) -> impl Iterator<Item = (&na::Vector<i32, C>, &mut UniformArray<T, B>)> {
+	pub fn iter_mut(&mut self) -> impl Iterator<Item = (&na::Vector<i32, C>, &mut T)> {
 		self.chunks.iter_mut().map(|(a, b)| (&a.coordinates, b))
 	}
 	pub fn positions(&self) -> impl Iterator<Item = &na::Vector<i32, C>> {
 		self.chunks.keys().map(|a| &a.coordinates)
 	}
-	pub fn chunks(&self) -> impl Iterator<Item = &UniformArray<T, B>> {
+	pub fn chunks(&self) -> impl Iterator<Item = &T> {
 		self.chunks.values()
 	}
-	pub fn chunks_mut(&mut self) -> impl Iterator<Item = &mut UniformArray<T, B>> {
+	pub fn chunks_mut(&mut self) -> impl Iterator<Item = &mut T> {
 		self.chunks.values_mut()
 	}
 }
@@ -65,7 +66,7 @@ pub struct WorldCoordinate<const C: usize, const B: usize> {
 	pub block: na::Vector<i32, B>,
 }
 
-impl<T, const W: usize, const C: usize, const B: usize> World<T, C, B>
+impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> World<T, C, B>
 where
 	na::Const<C>: na::DimMax<na::Const<B>, Output = na::Const<W>>,
 	[usize; B]: ndarray::Dimension,
@@ -113,21 +114,15 @@ where
 	pub fn world_to_block(&self, position: na::Vector<i32, W>) -> na::Vector<i32, B> {
 		self.world_to_chunk_block(position).block
 	}
-	pub fn block(&mut self, position: na::Vector<i32, W>) -> Option<&T> {
+	pub fn block(&mut self, position: na::Vector<i32, W>) -> Option<&T::Block> {
 		let world = self.world_to_chunk_block(position);
 
-		let block: na::Vector<usize, B> = world.block.try_cast().unwrap();
-		let block: [usize; B] = block.into();
-
-		self.chunk(world.chunk)?.get(block)
+		self.chunk(world.chunk)?.get(world.block)
 	}
-	pub fn block_mut(&mut self, position: na::Vector<i32, W>) -> Option<&mut T> {
+	pub fn block_mut(&mut self, position: na::Vector<i32, W>) -> Option<&mut T::Block> {
 		let world = self.world_to_chunk_block(position);
 
-		let block: na::Vector<usize, B> = world.block.try_cast().unwrap();
-		let block: [usize; B] = block.into();
-
-		self.chunk_mut(world.chunk)?.get_mut(block)
+		self.chunk_mut(world.chunk)?.get_mut(world.block)
 	}
 }
 
