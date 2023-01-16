@@ -10,8 +10,6 @@ mod macros {
 	#[macro_export]
 	macro_rules! multiform_chunk {
 		($Shape:ident, $Chunk:ident, [$($N:ident),*; $D:expr]) => {
-
-
 			// #[doc = ::std::concat!("[`Shape`]($crate::shape): A hyperrectangle with `", stringify!($D), "` dimensions and sides of lengths ", $("`", stringify!($N), "` "),*)]
 			#[derive(Debug, Default, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash)]
 			pub struct $Shape<$(const $N: usize),*>;
@@ -21,7 +19,6 @@ mod macros {
 					$crate::na::Vector::from([$($N),*])
 				}
 			}
-
 
 			#[allow(non_camel_case_types, non_upper_case_globals)]
 			#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash)]
@@ -88,3 +85,11 @@ crate::multiform_chunk! { MultiformShape4, MultiformChunk4, [X, Y, Z, W; 4] }
 pub type CollumnChunk16x16x256<T> = MultiformChunk3<T, 16, 16, 256, { 16 * 16 * 256 }>;
 
 pub type World2Collumns3<T> = World<CollumnChunk16x16x256<T>, 3, 2, 3>;
+
+
+
+
+
+
+
+

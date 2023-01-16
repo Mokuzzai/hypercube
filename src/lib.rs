@@ -15,8 +15,6 @@ mod world;
 
 mod na;
 
-pub mod ctx;
-
 /// Implementation of uniform [`Chunk`]s and [`World`]s
 pub mod uniform;
 
