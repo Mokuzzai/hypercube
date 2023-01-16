@@ -6,6 +6,7 @@ use nd::Dimension;
 pub type WithParallelContext2<T> = WithParallelContext<T, 2, 1>;
 pub type WithParallelContext3<T> = WithParallelContext<T, 3, 2>;
 
+// #[derive(Debug)]
 pub struct WithParallelContext<T, const B: usize, const S: usize> {
 	array: nd::Array<T, B>,
 }
@@ -17,7 +18,7 @@ impl<T, const B: usize, const S: usize> Chunk<B> for WithParallelContext<T, B, S
 	fn array_mut(&mut self) -> &mut nd::Array<Self::Block, B> { &mut self.array }
 }
 
-
+#[derive(Debug)]
 pub struct ParallelContext<T, const B: usize, const S: usize> {
 	ctx: Box<[T]>,
 
@@ -29,33 +30,33 @@ where
 	nd::Shape<B>: Dimension,
 	nd::Shape<S>: Dimension,
 {
-	pub const FACE_COUNT: usize = B * 2;
+	pub const SUBCOUNT: usize = B * 2;
 
-	pub fn face_shape(&self) -> nd::Shape<B> {
-		[self.stride; B]
+	pub fn subshape(&self) -> nd::Shape<S> {
+		[self.stride; S]
 	}
-	pub fn face_size(&self) -> usize {
-		self.face_shape().size()
+	pub fn subsize(&self) -> usize {
+		self.subshape().size()
 	}
-	pub fn face_count(&self) -> usize {
-		Self::FACE_COUNT
+	pub fn subcount(&self) -> usize {
+		Self::SUBCOUNT
 	}
-	pub fn view(&self, index: usize) -> nd::ArrayView<T, S> {
+	pub fn sub(&self, index: usize) -> nd::ArrayView<T, S> {
 		assert!(S == B - 1, "`S` must be equal to `B - 1`");
-		assert!(index < self.face_count(), "index: `{}` of range `{:?}`: no such face", index, 0..self.face_count());
+		assert!(index < self.subcount(), "index: `{}` of range `{:?}`: no such face", index, 0..self.subcount());
 
-		let size = self.face_size();
+		let size = self.subsize();
 
 		let start = index * size;
 		let end = start + size;
 
 		nd::ArrayView::<T, S>::from_shape([self.stride; S], &self.ctx[start..end]).unwrap()
 	}
-	pub fn view_mut(&mut self, index: usize) -> nd::ArrayViewMut<T, S> {
+	pub fn sub_mut(&mut self, index: usize) -> nd::ArrayViewMut<T, S> {
 		assert!(S == B - 1, "`S` must be equal to `B - 1`");
-		assert!(index < self.face_count(), "index: `{}` of range `{:?}`: no such face", index, 0..self.face_count());
+		assert!(index < self.subcount(), "index: `{}` of range `{:?}`: no such face", index, 0..self.subcount());
 
-		let size = self.face_size();
+		let size = self.subsize();
 
 		let start = index * size;
 		let end = start + size;
