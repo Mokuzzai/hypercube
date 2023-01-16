@@ -1,6 +1,8 @@
 
-use ndarray as nd;
+pub use ndarray::*;
 
-pub use nd::Dimension;
+pub type Shape<const D: usize> = [usize; D];
 
-pub type Array<T, const D: usize> = nd::Array<T, [usize; D]>;
+pub type Array<T, const D: usize> = ndarray::Array<T, Shape<D>>;
+pub type ArrayView<'a, T, const D: usize> = ndarray::ArrayView<'a, T, Shape<D>>;
+pub type ArrayViewMut<'a, T, const D: usize> = ndarray::ArrayViewMut<'a, T, Shape<D>>;

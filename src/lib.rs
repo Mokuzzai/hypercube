@@ -2,11 +2,14 @@
 #![allow(unused)]
 #![warn(missing_debug_implementations)]
 
-mod chunk;
-mod world;
+pub mod chunk;
+pub mod world;
 
-mod na;
-mod nd;
+/// Nalgebra re-export
+pub mod na;
+
+/// Ndarray re-export
+pub mod nd;
 
 pub use chunk::Chunk;
 pub use world::World;

@@ -2,6 +2,8 @@
 use crate::nd;
 use crate::na;
 
+pub mod ctx;
+
 pub trait Chunk<const B: usize> {
 	type Block;
 
@@ -34,17 +36,6 @@ pub struct DefaultChunk<T, const B: usize> {
 }
 
 impl<T, const B: usize> Chunk<B> for DefaultChunk<T, B> {
-	type Block = T;
-
-	fn array(&self) -> &nd::Array<Self::Block, B> { &self.array }
-	fn array_mut(&mut self) -> &mut nd::Array<Self::Block, B> { &mut self.array }
-}
-
-pub struct WithParallelContext<T, const B: usize> {
-	array: nd::Array<T, B>,
-}
-
-impl<T, const B: usize> Chunk<B> for WithParallelContext<T, B> {
 	type Block = T;
 
 	fn array(&self) -> &nd::Array<Self::Block, B> { &self.array }

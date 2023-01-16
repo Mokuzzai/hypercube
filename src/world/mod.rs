@@ -71,7 +71,7 @@ where
 	na::Const<C>: na::DimMax<na::Const<B>, Output = na::Const<W>>,
 	[usize; B]: ndarray::Dimension,
 {
-	fn world_to_chunk_block(
+	pub fn world_to_chunk_block(
 		&self,
 		world: na::Vector<i32, W>,
 	) -> WorldCoordinate<C, B>
@@ -94,7 +94,7 @@ where
 
 		WorldCoordinate { chunk, block }
 	}
-	fn chunk_block_to_world(
+	pub fn chunk_block_to_world(
 		&self,
 		chunk: na::Vector<i32, C>,
 		block: na::Vector<i32, B>,
