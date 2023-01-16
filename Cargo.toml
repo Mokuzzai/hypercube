@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 nalgebra = { version = "0.31.4" } #, features = ["bytemuck"]
+ndarray = "0.15.6"
 # bytemuck = { version = "1.12.3", features = ["derive", "min_const_generics"] }
 # num = "0.4.0"
 # simba = "0.7.3"
