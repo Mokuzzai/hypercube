@@ -7,8 +7,8 @@ pub mod ctx;
 pub trait Chunk<const B: usize> {
 	type Block;
 
-	fn array(&self) -> &nd::Array<Self::Block, B>;
-	fn array_mut(&mut self) -> &mut nd::Array<Self::Block, B>;
+	fn array(&self) -> &nd::Array<Self::Block, nd::Shape<B>>;
+	fn array_mut(&mut self) -> &mut nd::Array<Self::Block, nd::Shape<B>>;
 
 
 	fn get(&self, position: na::Vector<i32, B>) -> Option<&Self::Block>
@@ -32,12 +32,12 @@ pub trait Chunk<const B: usize> {
 }
 
 pub struct DefaultChunk<T, const B: usize> {
-	array: nd::Array<T, B>,
+	array: nd::Array<T, nd::Shape<B>>,
 }
 
 impl<T, const B: usize> Chunk<B> for DefaultChunk<T, B> {
 	type Block = T;
 
-	fn array(&self) -> &nd::Array<Self::Block, B> { &self.array }
-	fn array_mut(&mut self) -> &mut nd::Array<Self::Block, B> { &mut self.array }
+	fn array(&self) -> &nd::Array<Self::Block, nd::Shape<B>> { &self.array }
+	fn array_mut(&mut self) -> &mut nd::Array<Self::Block, nd::Shape<B>> { &mut self.array }
 }
