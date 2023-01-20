@@ -2,8 +2,6 @@
 use crate::nd;
 use crate::na;
 
-pub mod ctx;
-
 pub trait Chunk<const B: usize> {
 	type Block;
 
