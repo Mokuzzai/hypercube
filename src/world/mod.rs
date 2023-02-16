@@ -1,4 +1,5 @@
 mod ordered_vector;
+mod ctx;
 
 use ordered_vector::OrderedVector;
 
@@ -7,26 +8,51 @@ use crate::nd;
 
 use crate::Chunk;
 
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
+
+#[derive(Debug, Default, Copy, Clone)]
+pub struct ChunkIndex {
+	pub index: usize
+}
+
+#[derive(Debug, Default, Copy, Clone)]
+pub struct BlockIndex {
+	pub index: usize
+}
+
+#[derive(Debug, Default, Copy, Clone)]
+pub struct WorldIndex {
+	pub chunk: ChunkIndex,
+	pub block: BlockIndex,
+}
 
 /// * `T`: [`Chunk`] type
 /// * `C`: [`Chunk`] space dimensions
 /// * `B`: `Block` space dimensions
 #[derive(Clone)]
 pub struct World<T, const C: usize, const B: usize> {
-	chunks: BTreeMap<OrderedVector<C>, T>,
+	chunks: IndexMap<OrderedVector<C>, T>,
 	chunk_stride: usize,
 }
 
 impl<T, const C: usize, const B: usize> World<T, C, B> {
 	pub fn new(chunk_stride: usize) -> Self {
 		Self {
-			chunks: BTreeMap::new(),
+			chunks: IndexMap::new(),
 			chunk_stride,
 		}
 	}
+	pub fn get(&self, position: na::Vector<i32, C>) -> Option<(usize, &na::Vector<i32, C>, &T)> {
+		self.chunks.get_full(&OrderedVector::new(position)).map(|(i, p, c)| (i, &p.coordinates, c))
+	}
+	pub fn get_index(&self, index: usize) -> Option<(usize, &na::Vector<i32, C>, &T)> {
+		self.chunks.get(index).map(|(p, c)| (index, &p.coordinates, c))
+	}
 	pub fn chunk(&self, position: na::Vector<i32, C>) -> Option<&T> {
 		self.chunks.get(&OrderedVector::new(position))
+	}
+	pub fn chunk_index(&self, index: usize) -> Option<&T> {
+		self.get(index).map(|(_, _, c)| c)
 	}
 	pub fn chunk_mut(&mut self, position: na::Vector<i32, C>) -> Option<&mut T> {
 		self.chunks.get_mut(&OrderedVector::new(position))
@@ -60,6 +86,15 @@ impl<T, const C: usize, const B: usize> World<T, C, B> {
 	}
 }
 
+impl<T, const C: usize, const B: usize> World<T, C, B>
+where
+	nd::Shape<C>: nd::Dimension,
+{
+	pub fn full_ctx(&self, position: na::Vector<i32, C>) -> ctx::FullCtx<T, C> {
+		ctx::FullCtx::new(self, position)
+	}
+}
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct WorldCoordinate<const C: usize, const B: usize> {
 	pub chunk: na::Vector<i32, C>,
@@ -69,7 +104,7 @@ pub struct WorldCoordinate<const C: usize, const B: usize> {
 impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> World<T, C, B>
 where
 	na::Const<C>: na::DimMax<na::Const<B>, Output = na::Const<W>>,
-	[usize; B]: ndarray::Dimension,
+	nd::Shape<B>: nd::Dimension,
 {
 	pub fn world_to_chunk_block(
 		&self,
@@ -124,6 +159,9 @@ where
 
 		self.chunk_mut(world.chunk)?.get_mut(world.block)
 	}
+	// pub fn block_relative(&self, origin: ) -> Option<&T::Block> {
+ //
+	// }
 }
 
 impl<T, const C: usize, const B: usize> Default for World<T, C, B> {

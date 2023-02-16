@@ -1,27 +1,38 @@
 use crate::na;
 
 use std::cmp::Ordering;
+use std::hash::Hash;
+use std::hash::Hasher;
 
 #[derive(Clone)]
-pub struct OrderedVector<const D: usize> {
-	pub coordinates: na::Vector<i32, D>,
+pub struct OrderedVector<const C: usize> {
+	pub coordinates: na::Vector<i32, C>,
 }
 
-impl<const D: usize> OrderedVector<D> {
-	pub fn new(coordinates: na::Vector<i32, D>) -> Self {
+impl<const C: usize> OrderedVector<C> {
+	pub fn new(coordinates: na::Vector<i32, C>) -> Self {
 		Self { coordinates }
 	}
 }
 
-impl<const D: usize> PartialEq for OrderedVector<D> {
+impl<const C: usize> Hash for OrderedVector<C> {
+	fn hash<H>(&self, state: &mut H)
+	where
+		H: Hasher,
+	{
+		self.coordinates.iter().for_each(|extent| extent.hash(state))
+	}
+}
+
+impl<const C: usize> PartialEq for OrderedVector<C> {
 	fn eq(&self, other: &Self) -> bool {
 		self.coordinates.eq(&other.coordinates)
 	}
 }
 
-impl<const D: usize> Eq for OrderedVector<D> {}
+impl<const C: usize> Eq for OrderedVector<C> {}
 
-impl<const D: usize> PartialOrd for OrderedVector<D> {
+impl<const C: usize> PartialOrd for OrderedVector<C> {
 	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
 		self.coordinates
 			.iter()
@@ -33,7 +44,7 @@ impl<const D: usize> PartialOrd for OrderedVector<D> {
 	}
 }
 
-impl<const D: usize> Ord for OrderedVector<D> {
+impl<const C: usize> Ord for OrderedVector<C> {
 	fn cmp(&self, other: &Self) -> Ordering {
 		self.coordinates
 			.iter()
@@ -46,7 +57,7 @@ impl<const D: usize> Ord for OrderedVector<D> {
 const _: () = {
 	use std::fmt::*;
 
-	impl<const D: usize> Debug for OrderedVector<D> {
+	impl<const C: usize> Debug for OrderedVector<C> {
 		fn fmt(&self, f: &mut Formatter) -> Result {
 			Debug::fmt(&self.coordinates, f)
 		}
