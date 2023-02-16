@@ -1,19 +1,15 @@
-//! # Coordinates
-//!
-//! * `world` refers to an unique block in a [`World`] and is equal to `chunk_coordinate * chunk_stride + block_coordinate`
-//! * `chunk` refers to a single [`Chunk`] in a [`World`] and
-//! * `block` refers to a single block in a [`Chunk`]
-
 #![allow(unused)]
 #![warn(missing_debug_implementations)]
 
 mod chunk;
-mod position_index_conversion;
+pub mod position_index_conversion;
+pub mod dynamic;
+
 mod positions;
 mod shape;
 mod world;
 
-mod na;
+pub mod na;
 
 /// Implementation of uniform [`Chunk`]s and [`World`]s
 pub mod uniform;
