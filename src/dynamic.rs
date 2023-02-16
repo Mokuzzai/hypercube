@@ -24,3 +24,17 @@ impl<T, const B: usize> Chunk<B> for DynamicChunk<T, B> {
 		self.data.get_mut(index)
 	}
 }
+impl<T, const B: usize> DynamicChunk<T, B> {
+	pub fn new(shape: na::Vector<usize, B>) -> Self
+	where
+		T: Default,
+	{
+		let shape = DynamicMultiformShape::new(shape);
+
+		let mut data = Vec::new();
+
+		data.resize_with(shape.capacity(), T::default);
+
+		Self { data: data.into(), shape }
+	}
+}
