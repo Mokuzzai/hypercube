@@ -6,13 +6,13 @@ pub use with_payload::WithPayload;
 use crate::na;
 use crate::Positions;
 use crate::Shape;
-
+use crate::Cow;
 
 pub trait Chunk<const B: usize> {
 	type Item;
 	type Shape: Shape<B>;
 
-	fn shape(&self) -> &Self::Shape;
+	fn shape(&self) -> Cow<Self::Shape>;
 
 	fn index(&self, index: usize) -> Option<&Self::Item>;
 	fn index_mut(&mut self, index: usize) -> Option<&mut Self::Item>;

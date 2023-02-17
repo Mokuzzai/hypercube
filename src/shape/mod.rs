@@ -1,5 +1,7 @@
 mod imp;
 
+use std::ops::Deref;
+
 pub use imp::DynamicShape;
 pub use imp::DynamicMultiformShape;
 pub use imp::DynamicUniformShape;
@@ -23,10 +25,10 @@ pub trait Shape<const B: usize>: Sized {
 		self.extents().into_iter().product()
 	}
 	fn position_to_index(&self, block: na::Vector<i32, B>) -> Option<usize> {
-		crate::position_index_conversion::position_to_index(self.extents(), block)
+		na::position_to_index(self.extents(), block)
 	}
 	fn index_to_position(&self, index: usize) -> Option<na::Vector<i32, B>> {
-		crate::position_index_conversion::index_to_position(self.extents(), index)
+		na::index_to_position(self.extents(), index)
 	}
 	fn world_to_chunk_block<const W: usize, const C: usize>(
 		&self,
@@ -36,23 +38,7 @@ pub trait Shape<const B: usize>: Sized {
 		na::Const<B>: na::DimMax<na::Const<W>, Output = na::Const<W>>,
 		na::Const<C>: na::DimMax<na::Const<W>, Output = na::Const<W>>,
 	{
-		let chunk_shape = self.extents().cast::<i32>();
-
-		let chunk_shape_as_global = chunk_shape.resize_generic(na::Const::<W>, na::Const::<1>, 0);
-
-		// this subchunk might be negative and if it is it should be inversed
-		let mut block_as_global = world.zip_map(&chunk_shape_as_global, std::ops::Rem::rem);
-
-		for (value, &extent) in block_as_global.iter_mut().zip(chunk_shape_as_global.iter()) {
-			*value = (*value + extent) % extent
-		}
-
-		let chunk_as_global = world.zip_map(&chunk_shape_as_global, std::ops::Div::div);
-
-		let chunk = chunk_as_global.resize_generic(na::Const::<C>, na::Const::<1>, 0);
-		let block = block_as_global.resize_generic(na::Const::<B>, na::Const::<1>, 0);
-
-		WorldCoordinate { chunk, block }
+		na::world_to_chunk_block(self.extents(), world)
 	}
 	fn chunk_block_to_world<const W: usize, const C: usize>(
 		&self,
@@ -63,19 +49,41 @@ pub trait Shape<const B: usize>: Sized {
 		na::Const<B>: na::DimMax<na::Const<W>, Output = na::Const<W>>,
 		na::Const<C>: na::DimMax<na::Const<W>, Output = na::Const<W>>,
 	{
-		let chunk_shape = self.extents().cast::<i32>();
-
-		let chunk_shape_as_global = chunk_shape.resize_generic(na::Const::<W>, na::Const::<1>, 0);
-
-		let chunk_as_global = chunk.resize_generic(na::Const::<W>, na::Const::<1>, 0);
-		let block_as_global = block.resize_generic(na::Const::<W>, na::Const::<1>, 0);
-
-		chunk_as_global + block_as_global.component_mul(&chunk_shape_as_global)
+		na::chunk_block_to_world(self.extents(), chunk, block)
 	}
 }
 
 pub trait UniformShape<const B: usize>: Shape<B> {
 	fn stride(&self) -> usize;
+}
+
+#[derive(Debug)]
+pub enum Cow<'a, T> {
+	Owned(T),
+	Borrowed(&'a T),
+}
+
+impl<'a, T> Deref for Cow<'a, T> {
+	type Target = T;
+
+	fn deref(&self) -> &Self::Target {
+		match *self {
+			Self::Owned(ref t) => t,
+			Self::Borrowed(t) => t,
+		}
+	}
+}
+
+impl<'a, T: Shape<B>, const B: usize> Shape<B> for Cow<'a, T> {
+	fn extents(&self) -> na::Vector<usize, B> {
+		self.deref().extents()
+	}
+}
+
+impl<'a, T: UniformShape<B>, const B: usize> UniformShape<B> for Cow<'a, T> {
+	fn stride(&self) -> usize {
+		self.deref().stride()
+	}
 }
 
 #[cfg(test)]

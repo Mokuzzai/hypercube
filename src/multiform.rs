@@ -31,8 +31,8 @@ mod macros {
 				type Item = T;
 				type Shape = $Shape<$($N),*>;
 
-				fn shape(&self) -> &Self::Shape {
-					&$Shape
+				fn shape(&self) -> $crate::Cow<Self::Shape> {
+					$crate::Cow::Owned($Shape)
 				}
 
 				fn index(&self, index: ::std::primitive::usize) -> ::std::option::Option<&Self::Item> {

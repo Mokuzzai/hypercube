@@ -3,6 +3,7 @@ use crate::na;
 use crate::DynamicMultiformShape;
 use crate::Shape;
 use crate::Chunk;
+use crate::Cow;
 
 #[derive(Debug)]
 pub struct DynamicChunk<T, const B: usize> {
@@ -14,8 +15,8 @@ impl<T, const B: usize> Chunk<B> for DynamicChunk<T, B> {
 	type Item = T;
 	type Shape = DynamicMultiformShape<B>;
 
-	fn shape(&self) -> &Self::Shape {
-		&self.shape
+	fn shape(&self) -> Cow<Self::Shape> {
+		Cow::Borrowed(&self.shape)
 	}
 	fn index(&self, index: usize) -> Option<&Self::Item> {
 		self.data.get(index)

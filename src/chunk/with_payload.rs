@@ -18,7 +18,7 @@ impl<C: Chunk<B>, P, const B: usize> Chunk<B> for WithPayload<C, P> {
 	type Item = C::Item;
 	type Shape = C::Shape;
 
-	fn shape(&self) -> &Self::Shape {
+	fn shape(&self) -> Cow<Self::Shape> {
 		self.chunk.shape()
 	}
 	fn index(&self, index: usize) -> Option<&Self::Item> {

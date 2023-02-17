@@ -3,6 +3,7 @@ pub mod ctx;
 pub use ctx::ParallelAxisContext;
 pub use ctx::ParallelContext;
 
+use crate::Cow;
 use crate::na;
 use crate::Chunk;
 use crate::DynamicUniformShape;
@@ -64,8 +65,8 @@ impl<T, const S: usize, const B: usize, const C: usize> Chunk<B> for UniformChun
 	type Item = T;
 	type Shape = UniformShape<S, B>;
 
-	fn shape(&self) -> &Self::Shape {
-		&UniformShape
+	fn shape(&self) -> Cow<Self::Shape> {
+		Cow::Owned(UniformShape)
 	}
 
 	fn index(&self, index: usize) -> Option<&Self::Item> {

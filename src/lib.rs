@@ -2,7 +2,6 @@
 #![warn(missing_debug_implementations)]
 
 mod chunk;
-pub mod position_index_conversion;
 pub mod dynamic;
 
 mod positions;
@@ -23,6 +22,7 @@ pub use shape::DynamicUniformShape;
 pub use shape::Shape;
 pub use shape::UniformShape;
 pub use shape::WorldCoordinate;
+pub use shape::Cow;
 
 pub use chunk::Chunk;
 pub use chunk::WithPayload;
