@@ -11,22 +11,17 @@ mod array;
 /// `Nalgebra` re-export
 pub mod math;
 
-// /// Implementation of uniform [`Chunk`]s and [`World`]s
-// pub mod uniform;
-
-
-
-pub use shape::DynamicMultiformShape;
-pub use shape::DynamicShape;
-pub use shape::DynamicUniformShape;
+pub use shape::DynamicMultiform;
+pub use shape::Dynamic;
+pub use shape::DynamicUniform;
+pub use shape::Static1;
+pub use shape::Static2;
+pub use shape::Static3;
+pub use shape::Static4;
 
 pub use shape::Shape;
-pub use shape::Shape1;
-pub use shape::Shape2;
-pub use shape::Shape3;
-pub use shape::Shape4;
-
 pub use shape::UniformShape;
+
 pub use shape::WorldCoordinate;
 pub use shape::Cow;
 
@@ -41,5 +36,10 @@ pub use positions::Positions;
 pub use boxed::Boxed;
 pub use array::Array;
 
-pub type CollumnChunk16x16x256<T> = Boxed<T, Shape3<16, 16, 256>, 3>;
-pub type World16x16x256<T> = World<CollumnChunk16x16x256<T>, 3, 2, 3>;
+type Boxed16x16x256<T> = Boxed<T, Static3<16, 16, 256>, 3>;
+type World16x16x256<T> = World<Boxed16x16x256<T>, 3, 2, 3>;
+
+#[macro_export]
+macro_rules! lazy_unreachable {
+	($($t:tt)*) => {{ || unreachable!($($t)*)} }
+}

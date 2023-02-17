@@ -1,16 +1,12 @@
 pub use nalgebra;
-
+pub use nalgebra::Dim;
+pub use nalgebra::OVector;
+pub use nalgebra::Scalar;
+pub use nalgebra::dimension::Const;
 pub use nalgebra::dimension::DimMax;
 pub use nalgebra::dimension::DimMaximum;
-pub use nalgebra::Dim;
 
 pub type Vector<T, const D: usize> = OVector<T, Const<D>>;
-
-pub use nalgebra::OVector;
-
-pub use nalgebra::dimension::Const;
-
-pub use nalgebra::Scalar;
 
 use crate::WorldCoordinate;
 
@@ -87,12 +83,13 @@ where
 	let chunk_shape_as_global = chunk_shape.resize_generic(Const::<W>, Const::<1>, 0);
 
 	// this subchunk might be negative and if it is it should be inversed
+	// BEGIN
 	let mut block_as_global = world.zip_map(&chunk_shape_as_global, std::ops::Rem::rem);
 
 	for (value, &extent) in block_as_global.iter_mut().zip(chunk_shape_as_global.iter()) {
 		*value = (*value + extent) % extent
 	}
-
+	// END
 	let chunk_as_global = world.zip_map(&chunk_shape_as_global, std::ops::Div::div);
 
 	let chunk = chunk_as_global.resize_generic(Const::<C>, Const::<1>, 0);
@@ -121,7 +118,7 @@ where
 }
 
 #[cfg(test)]
-mod origin {
+mod test {
 	use super::*;
 
 	const X: usize = 5;
@@ -164,5 +161,44 @@ mod origin {
 			assert_eq!(expected.cast(), result);
 		})
 	}
-}
 
+	use crate::Boxed16x16x256;
+	use crate::World16x16x256;
+	use crate::Chunk;
+	use crate::WorldCoordinate;
+
+	#[test]
+	fn test_global_to_chunk_subchunk() {
+		let mut world = World16x16x256::default();
+
+		for y in -1..2 {
+			for x in -1..2 {
+				let chunk = Vector::from([x, y]);
+
+				world.chunk_insert(
+					Vector::from(chunk),
+					Boxed16x16x256::from_position(|block| WorldCoordinate {
+						chunk,
+						block,
+					}),
+				);
+			}
+		}
+
+		for z in 0..256 {
+			for y in -16..32 {
+				for x in -16..32 {
+					let result = world.world_to_chunk_block(Vector::from([x, y, z]));
+
+					let &expected = world
+						.chunk(result.chunk)
+						.unwrap()
+						.get(result.block)
+						.unwrap();
+
+					assert_eq!(result, expected);
+				}
+			}
+		}
+	}
+}

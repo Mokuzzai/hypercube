@@ -13,7 +13,6 @@ impl<C, P> WithPayload<C, P> {
 	}
 }
 
-// ALERT: ALL METHODS MUST BE PASSED TROUGH EVEN IF THEY HAVE A DEFAULT IMPLEMENTATION
 impl<C: Chunk<B>, P, const B: usize> Chunk<B> for WithPayload<C, P> {
 	type Item = C::Item;
 	type Shape = C::Shape;
@@ -26,13 +25,22 @@ impl<C: Chunk<B>, P, const B: usize> Chunk<B> for WithPayload<C, P> {
 	fn shape(&self) -> Cow<Self::Shape> {
 		self.chunk.shape()
 	}
+
+	// NOTE: we implement theese methods manually because `C` may overload them
 	fn get(&self, position: math::Vector<i32, B>) -> Option<&Self::Item> {
 		self.chunk.get(position)
 	}
 	fn get_mut(&mut self, position: math::Vector<i32, B>) -> Option<&mut Self::Item> {
 		self.chunk.get_mut(position)
 	}
+	fn replace(&mut self, position: math::Vector<i32, B>, with: Self::Item) -> Option<Self::Item> {
+		self.chunk.replace(position, with)
+	}
 	fn positions(&self) -> Positions<B> {
 		self.chunk.positions()
 	}
+
+	// NOTE: theese cannot be overloaded meaningfully
+	// fn item_positions(&self) -> ItemsPositions<Self::Item, B> { .. }
+	// fn item_positions_mut(&mut self) -> ItemsPositionsMut<Self::Item, B> { .. }
 }

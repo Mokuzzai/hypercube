@@ -1,67 +1,67 @@
 pub use super::*;
 
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
-pub struct DynamicUniformShape<const B: usize> {
+pub struct DynamicUniform<const B: usize> {
 	stride: usize,
 }
 
-impl<const B: usize> DynamicUniformShape<B> {
+impl<const B: usize> DynamicUniform<B> {
 	pub fn new(stride: usize) -> Self {
 		Self { stride }
 	}
 }
 
-impl<const B: usize> Shape<B> for DynamicUniformShape<B> {
+impl<const B: usize> Shape<B> for DynamicUniform<B> {
 	fn extents(&self) -> math::Vector<usize, B> {
 		math::Vector::from_element(self.stride)
 	}
 	fn capacity(&self) -> usize {
-		self.stride.pow(B as u32)
+		self.stride.pow(B.try_into().expect("capacity greater than `u32::MAX`"))
 	}
 }
 
-impl<const B: usize> UniformShape<B> for DynamicUniformShape<B> {
+impl<const B: usize> UniformShape<B> for DynamicUniform<B> {
 	fn stride(&self) -> usize {
 		self.stride
 	}
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub struct DynamicMultiformShape<const B: usize> {
+pub struct DynamicMultiform<const B: usize> {
 	extents: math::Vector<usize, B>,
 }
 
-impl<const B: usize> DynamicMultiformShape<B> {
+impl<const B: usize> DynamicMultiform<B> {
 	pub fn new(extents: math::Vector<usize, B>) -> Self {
 		Self { extents }
 	}
 }
 
-impl<const B: usize> Default for DynamicMultiformShape<B> {
+impl<const B: usize> Default for DynamicMultiform<B> {
 	fn default() -> Self {
 		Self::new(math::Vector::from_element(0))
 	}
 }
 
-impl<const B: usize> Shape<B> for DynamicMultiformShape<B> {
+impl<const B: usize> Shape<B> for DynamicMultiform<B> {
 	fn extents(&self) -> math::Vector<usize, B> {
 		self.extents
 	}
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub enum DynamicShape<const B: usize> {
-	Uniform(DynamicUniformShape<B>),
-	Multiform(DynamicMultiformShape<B>),
+pub enum Dynamic<const B: usize> {
+	Uniform(DynamicUniform<B>),
+	Multiform(DynamicMultiform<B>),
 }
 
-impl<const B: usize> Default for DynamicShape<B> {
+impl<const B: usize> Default for Dynamic<B> {
 	fn default() -> Self {
-		Self::Uniform(DynamicUniformShape::default())
+		Self::Uniform(DynamicUniform::default())
 	}
 }
 
-impl<const B: usize> Shape<B> for DynamicShape<B> {
+impl<const B: usize> Shape<B> for Dynamic<B> {
 	fn extents(&self) -> math::Vector<usize, B> {
 		match self {
 			Self::Uniform(uniform) => uniform.extents(),
@@ -83,7 +83,7 @@ mod macros {
 	#[macro_export]
 	macro_rules! multiform_chunk {
 		($Shape:ident, [$($N:ident),*; $D:expr]) => {
-			// #[doc = ::std::concat!("[`Shape`]($crate::shape): A hyperrectangle with `", stringify!($D), "` dimensions and sides of lengths ", $("`", stringify!($N), "` "),*)]
+			// #[doc = ::std::concat!("[``]($crate::shape): A hyperrectangle with `", stringify!($D), "` dimensions and sides of lengths ", $("`", stringify!($N), "` "),*)]
 			#[derive(Debug, Default, Eq, PartialEq, Copy, Clone, Hash)]
 			pub struct $Shape<$(const $N: ::std::primitive::usize),*>;
 
@@ -96,10 +96,10 @@ mod macros {
 	}
 }
 
-crate::multiform_chunk! { Shape1, [X; 1] }
-crate::multiform_chunk! { Shape2, [X, Y; 2]  }
-crate::multiform_chunk! { Shape3, [X, Y, Z; 3]}
-crate::multiform_chunk! { Shape4, [X, Y, Z, W; 4] }
+crate::multiform_chunk! { Static1, [X; 1] }
+crate::multiform_chunk! { Static2, [X, Y; 2]  }
+crate::multiform_chunk! { Static3, [X, Y, Z; 3]}
+crate::multiform_chunk! { Static4, [X, Y, Z, W; 4] }
 
 
 

@@ -114,10 +114,12 @@ const _: () = {
 	impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> Debug for World<T, W, C, B>
 	where
 		T: Debug,
+		T::Shape: Debug,
 	{
 		fn fmt(&self, f: &mut Formatter) -> Result {
 			f.debug_struct("World")
 				.field("chunks", &self.chunks)
+				.field("shape", &self.shape)
 				.finish()
 		}
 	}
