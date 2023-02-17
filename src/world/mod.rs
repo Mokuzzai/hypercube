@@ -116,7 +116,7 @@ const _: () = {
 		T: Debug,
 	{
 		fn fmt(&self, f: &mut Formatter) -> Result {
-			f.debug_struct("Wolrd")
+			f.debug_struct("World")
 				.field("chunks", &self.chunks)
 				.finish()
 		}
