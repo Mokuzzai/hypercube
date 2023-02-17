@@ -35,11 +35,11 @@ mod macros {
 					$crate::Cow::Owned($Shape)
 				}
 
-				fn index(&self, index: ::std::primitive::usize) -> ::std::option::Option<&Self::Item> {
-					self.buffer.get(index)
+				fn as_slice(&self) -> &[Self::Item] {
+					&self.buffer
 				}
-				fn index_mut(&mut self, index: ::std::primitive::usize) -> ::std::option::Option<&mut Self::Item> {
-					self.buffer.get_mut(index)
+				fn as_mut_slice(&mut self) -> &mut [Self::Item] {
+					&mut self.buffer
 				}
 			}
 

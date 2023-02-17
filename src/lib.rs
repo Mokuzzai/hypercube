@@ -2,8 +2,7 @@
 #![warn(missing_debug_implementations)]
 
 mod chunk;
-pub mod dynamic;
-
+mod boxed;
 mod positions;
 mod shape;
 mod world;
@@ -32,3 +31,4 @@ pub use world::World;
 
 pub use positions::Positions;
 
+pub use boxed::Boxed;

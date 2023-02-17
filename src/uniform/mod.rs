@@ -1,6 +1,3 @@
-pub use ctx::ParallelAxisContext;
-pub use ctx::ParallelContext;
-
 use crate::Cow;
 use crate::na;
 use crate::Chunk;
@@ -66,12 +63,11 @@ impl<T, const S: usize, const B: usize, const C: usize> Chunk<B> for UniformChun
 	fn shape(&self) -> Cow<Self::Shape> {
 		Cow::Owned(UniformShape)
 	}
-
-	fn index(&self, index: usize) -> Option<&Self::Item> {
-		self.buffer.get(index)
+	fn as_slice(&self) -> &[Self::Item] {
+		&self.buffer
 	}
-	fn index_mut(&mut self, index: usize) -> Option<&mut Self::Item> {
-		self.buffer.get_mut(index)
+	fn as_mut_slice(&mut self) -> &mut [Self::Item] {
+		&mut self.buffer
 	}
 }
 

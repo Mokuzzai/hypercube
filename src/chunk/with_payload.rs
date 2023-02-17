@@ -17,15 +17,14 @@ impl<C, P> WithPayload<C, P> {
 impl<C: Chunk<B>, P, const B: usize> Chunk<B> for WithPayload<C, P> {
 	type Item = C::Item;
 	type Shape = C::Shape;
-
+	fn as_slice(&self) -> &[Self::Item] {
+		self.chunk.as_slice()
+	}
+	fn as_mut_slice(&mut self) -> &mut [Self::Item] {
+		self.chunk.as_mut_slice()
+	}
 	fn shape(&self) -> Cow<Self::Shape> {
 		self.chunk.shape()
-	}
-	fn index(&self, index: usize) -> Option<&Self::Item> {
-		self.chunk.index(index)
-	}
-	fn index_mut(&mut self, index: usize) -> Option<&mut Self::Item> {
-		self.chunk.index_mut(index)
 	}
 	fn get(&self, position: na::Vector<i32, B>) -> Option<&Self::Item> {
 		self.chunk.get(position)
