@@ -9,17 +9,22 @@ use crate::WorldCoordinate;
 
 use std::collections::BTreeMap;
 
-/// `N` dimensional space containing some [`Chunk`]s
+/// `W` dimensional space containing some [`Chunk`]s
 ///
-/// * `C`: `Chunk`
-/// * `E`: dimensions in the world
-/// * `V`: dimensions in a chunk
+/// * `T`: the type of [`Chunk`] we are storing
+/// * `W`: dimensions in the world
+/// * `C`: dimensions in the plane in which [`Chunk`]s are located, usually equal to `W`
+/// * `B`: dimensions in a [`Chunk`]
 pub struct World<T: Chunk<B>, const W: usize, const C: usize, const B: usize> {
 	chunks: BTreeMap<OrderedVector<C>, T>,
 	shape: <T as Chunk<B>>::Shape,
 }
 
-impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> World<T, W, C, B> {
+impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> World<T, W, C, B>
+where
+	math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
+	math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
+{
 	pub fn new(shape: T::Shape) -> Self {
 		Self {
 			chunks: BTreeMap::new(),
@@ -59,12 +64,6 @@ impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> World<T, W, C,
 	pub fn chunks_mut(&mut self) -> impl Iterator<Item = &mut T> {
 		self.chunks.values_mut()
 	}
-}
-impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> World<T, W, C, B>
-where
-	math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
-	math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
-{
 	pub fn world_to_chunk_block(&self, world: math::Vector<i32, W>) -> WorldCoordinate<C, B> {
 		self.shape.world_to_chunk_block(world)
 	}
@@ -89,6 +88,8 @@ where
 impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> Default for World<T, W, C, B>
 where
 	<T as Chunk<B>>::Shape: Default,
+	math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
+	math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 {
 	fn default() -> Self {
 		Self::new(T::Shape::default())
@@ -125,4 +126,8 @@ const _: () = {
 	}
 };
 
+/// [`World`] with uniform dimensionality
 pub type UniformWorld<T, const D: usize> = World<T, D, D, D>;
+
+/// [`World`] with subuniform dimensionality
+pub type SubformWorld<T, const C: usize, const B: usize> = World<T, C, C, B>;

@@ -28,6 +28,7 @@ pub use shape::Cow;
 pub use chunk::Chunk;
 pub use chunk::WithPayload;
 
+pub use world::SubformWorld;
 pub use world::UniformWorld;
 pub use world::World;
 
@@ -39,7 +40,8 @@ pub use array::Array;
 type Boxed16x16x256<T> = Boxed<T, Static3<16, 16, 256>, 3>;
 type World16x16x256<T> = World<Boxed16x16x256<T>, 3, 2, 3>;
 
-#[macro_export]
 macro_rules! lazy_unreachable {
 	($($t:tt)*) => {{ || unreachable!($($t)*)} }
 }
+
+pub(crate) use lazy_unreachable;
