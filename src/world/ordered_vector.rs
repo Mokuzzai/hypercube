@@ -1,15 +1,15 @@
-use crate::na;
+use crate::math;
 use crate::Shape;
 
 use std::cmp::Ordering;
 
 #[derive(Clone)]
 pub struct OrderedVector<const D: usize> {
-	pub coordinates: na::Vector<i32, D>,
+	pub coordinates: math::Vector<i32, D>,
 }
 
 impl<const D: usize> OrderedVector<D> {
-	pub fn new(coordinates: na::Vector<i32, D>) -> Self {
+	pub fn new(coordinates: math::Vector<i32, D>) -> Self {
 		Self { coordinates }
 	}
 }

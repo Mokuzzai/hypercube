@@ -3,7 +3,7 @@ mod with_payload;
 
 pub use with_payload::WithPayload;
 
-use crate::na;
+use crate::math;
 use crate::Positions;
 use crate::Shape;
 use crate::Cow;
@@ -19,12 +19,12 @@ pub trait Chunk<const B: usize> {
 	fn as_slice(&self) -> &[Self::Item];
 	fn as_mut_slice(&mut self) -> &mut [Self::Item];
 
-	fn get(&self, position: na::Vector<i32, B>) -> Option<&Self::Item> {
+	fn get(&self, position: math::Vector<i32, B>) -> Option<&Self::Item> {
 		let index = self.shape().position_to_index(position)?;
 
 		self.as_slice().get(index)
 	}
-	fn get_mut(&mut self, position: na::Vector<i32, B>) -> Option<&mut Self::Item> {
+	fn get_mut(&mut self, position: math::Vector<i32, B>) -> Option<&mut Self::Item> {
 		let index = self.shape().position_to_index(position)?;
 
 		self.as_mut_slice().get_mut(index)
@@ -32,7 +32,7 @@ pub trait Chunk<const B: usize> {
 	fn positions(&self) -> Positions<B> {
 		self.shape().positions()
 	}
-	fn replace(&mut self, position: na::Vector<i32, B>, with: Self::Item) -> Option<Self::Item> {
+	fn replace(&mut self, position: math::Vector<i32, B>, with: Self::Item) -> Option<Self::Item> {
 		Some(std::mem::replace(self.get_mut(position)?, with))
 	}
 	fn item_positions(&self) -> ItemsPositions<Self::Item, B> {
@@ -47,33 +47,33 @@ use std::iter::Enumerate;
 
 #[derive(Debug)]
 pub struct ItemsPositions<'a, I, const B: usize> {
-	extents: na::Vector<usize, B>,
+	extents: math::Vector<usize, B>,
 	inner: Enumerate<slice::Iter<'a, I>>,
 }
 
 impl<'a, I, const B: usize> Iterator for ItemsPositions<'a, I, B> {
-	type Item = (na::Vector<i32, B>, &'a I);
+	type Item = (math::Vector<i32, B>, &'a I);
 
 	fn next(&mut self) -> Option<Self::Item> {
 		let (index, item) = self.inner.next()?;
 
-		Some((na::index_to_position(self.extents, index)?, item))
+		Some((math::index_to_position(self.extents, index)?, item))
 	}
 }
 
 #[derive(Debug)]
 pub struct ItemsPositionsMut<'a, I, const B: usize> {
-	extents: na::Vector<usize, B>,
+	extents: math::Vector<usize, B>,
 	inner: Enumerate<slice::IterMut<'a, I>>,
 }
 
 impl<'a, I, const B: usize> Iterator for ItemsPositionsMut<'a, I, B> {
-	type Item = (na::Vector<i32, B>, &'a mut I);
+	type Item = (math::Vector<i32, B>, &'a mut I);
 
 	fn next(&mut self) -> Option<Self::Item> {
 		let (index, item) = self.inner.next()?;
 
-		Some((na::index_to_position(self.extents, index)?, item))
+		Some((math::index_to_position(self.extents, index)?, item))
 	}
 }
 

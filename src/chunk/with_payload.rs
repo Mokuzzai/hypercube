@@ -26,10 +26,10 @@ impl<C: Chunk<B>, P, const B: usize> Chunk<B> for WithPayload<C, P> {
 	fn shape(&self) -> Cow<Self::Shape> {
 		self.chunk.shape()
 	}
-	fn get(&self, position: na::Vector<i32, B>) -> Option<&Self::Item> {
+	fn get(&self, position: math::Vector<i32, B>) -> Option<&Self::Item> {
 		self.chunk.get(position)
 	}
-	fn get_mut(&mut self, position: na::Vector<i32, B>) -> Option<&mut Self::Item> {
+	fn get_mut(&mut self, position: math::Vector<i32, B>) -> Option<&mut Self::Item> {
 		self.chunk.get_mut(position)
 	}
 	fn positions(&self) -> Positions<B> {

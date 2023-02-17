@@ -1,4 +1,4 @@
-use crate::na;
+use crate::math;
 use crate::Chunk;
 use crate::Shape;
 use crate::World;
@@ -15,8 +15,8 @@ mod macros {
 			pub struct $Shape<$(const $N: usize),*>;
 
 			impl<$(const $N: ::std::primitive::usize),*> $crate::Shape<$D> for $Shape<$($N),*> {
-				fn extents(&self) -> $crate::na::Vector<::std::primitive::usize, $D> {
-					$crate::na::Vector::from([$($N),*])
+				fn extents(&self) -> $crate::math::Vector<::std::primitive::usize, $D> {
+					$crate::math::Vector::from([$($N),*])
 				}
 			}
 
@@ -55,7 +55,7 @@ mod macros {
 				pub fn from_indices(f: impl ::std::ops::FnMut(::std::primitive::usize) -> T) -> Self {
 					Self::new(::std::array::from_fn(f))
 				}
-				pub fn from_positions(mut f: impl ::std::ops::FnMut($crate::na::Vector<::std::primitive::i32, $D>) -> T) -> Self {
+				pub fn from_positions(mut f: impl ::std::ops::FnMut($crate::math::Vector<::std::primitive::i32, $D>) -> T) -> Self {
 					Self::from_indices(|index| {
 						f($Shape::<$($N),*>
 							.index_to_position(index)

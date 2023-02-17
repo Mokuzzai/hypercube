@@ -1,4 +1,4 @@
-use crate::na;
+use crate::math;
 use crate::DynamicMultiformShape;
 use crate::Shape;
 
@@ -12,7 +12,7 @@ pub struct Positions<const B: usize> {
 }
 
 impl<const B: usize> Positions<B> {
-	pub fn new(extents: na::Vector<usize, B>) -> Self {
+	pub fn new(extents: math::Vector<usize, B>) -> Self {
 		let shape = DynamicMultiformShape::new(extents);
 
 		Self {
@@ -23,7 +23,7 @@ impl<const B: usize> Positions<B> {
 }
 
 impl<const B: usize> Iterator for Positions<B> {
-	type Item = na::Vector<i32, B>;
+	type Item = math::Vector<i32, B>;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		let next = self.inner.next()?;

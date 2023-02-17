@@ -2,7 +2,7 @@ mod ordered_vector;
 
 use ordered_vector::OrderedVector;
 
-use crate::na;
+use crate::math;
 use crate::Chunk;
 use crate::Shape;
 use crate::WorldCoordinate;
@@ -26,31 +26,31 @@ impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> World<T, W, C,
 			shape,
 		}
 	}
-	pub fn chunk(&self, position: na::Vector<i32, C>) -> Option<&T> {
+	pub fn chunk(&self, position: math::Vector<i32, C>) -> Option<&T> {
 		self.chunks.get(&OrderedVector::new(position))
 	}
-	pub fn chunk_mut(&mut self, position: na::Vector<i32, C>) -> Option<&mut T> {
+	pub fn chunk_mut(&mut self, position: math::Vector<i32, C>) -> Option<&mut T> {
 		self.chunks.get_mut(&OrderedVector::new(position))
 	}
-	pub fn chunk_insert(&mut self, position: na::Vector<i32, C>, chunk: T) -> Option<T> {
+	pub fn chunk_insert(&mut self, position: math::Vector<i32, C>, chunk: T) -> Option<T> {
 		self.chunks.insert(OrderedVector::new(position), chunk)
 	}
 	pub fn chunk_or_insert_with(
 		&mut self,
-		position: na::Vector<i32, C>,
+		position: math::Vector<i32, C>,
 		chunk: impl FnMut() -> T,
 	) -> &mut T {
 		self.chunks
 			.entry(OrderedVector::new(position))
 			.or_insert_with(chunk)
 	}
-	pub fn iter(&self) -> impl Iterator<Item = (&na::Vector<i32, C>, &T)> {
+	pub fn iter(&self) -> impl Iterator<Item = (&math::Vector<i32, C>, &T)> {
 		self.chunks.iter().map(|(a, b)| (&a.coordinates, b))
 	}
-	pub fn iter_mut(&mut self) -> impl Iterator<Item = (&na::Vector<i32, C>, &mut T)> {
+	pub fn iter_mut(&mut self) -> impl Iterator<Item = (&math::Vector<i32, C>, &mut T)> {
 		self.chunks.iter_mut().map(|(a, b)| (&a.coordinates, b))
 	}
-	pub fn positions(&self) -> impl Iterator<Item = &na::Vector<i32, C>> {
+	pub fn positions(&self) -> impl Iterator<Item = &math::Vector<i32, C>> {
 		self.chunks.keys().map(|a| &a.coordinates)
 	}
 	pub fn chunks(&self) -> impl Iterator<Item = &T> {
@@ -62,24 +62,24 @@ impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> World<T, W, C,
 }
 impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> World<T, W, C, B>
 where
-	na::Const<B>: na::DimMax<na::Const<W>, Output = na::Const<W>>,
-	na::Const<C>: na::DimMax<na::Const<W>, Output = na::Const<W>>,
+	math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
+	math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 {
-	pub fn world_to_chunk_block(&self, world: na::Vector<i32, W>) -> WorldCoordinate<C, B> {
+	pub fn world_to_chunk_block(&self, world: math::Vector<i32, W>) -> WorldCoordinate<C, B> {
 		self.shape.world_to_chunk_block(world)
 	}
-	pub fn world_to_chunk(&self, position: na::Vector<i32, W>) -> na::Vector<i32, C> {
+	pub fn world_to_chunk(&self, position: math::Vector<i32, W>) -> math::Vector<i32, C> {
 		self.world_to_chunk_block(position).chunk
 	}
-	pub fn world_to_block(&self, position: na::Vector<i32, W>) -> na::Vector<i32, B> {
+	pub fn world_to_block(&self, position: math::Vector<i32, W>) -> math::Vector<i32, B> {
 		self.world_to_chunk_block(position).block
 	}
-	pub fn block(&mut self, position: na::Vector<i32, W>) -> Option<&T::Item> {
+	pub fn block(&mut self, position: math::Vector<i32, W>) -> Option<&T::Item> {
 		let world = self.world_to_chunk_block(position);
 
 		self.chunk(world.chunk)?.get(world.block)
 	}
-	pub fn block_mut(&mut self, position: na::Vector<i32, W>) -> Option<&mut T::Item> {
+	pub fn block_mut(&mut self, position: math::Vector<i32, W>) -> Option<&mut T::Item> {
 		let world = self.world_to_chunk_block(position);
 
 		self.chunk_mut(world.chunk)?.get_mut(world.block)

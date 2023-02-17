@@ -6,17 +6,17 @@ pub use imp::DynamicShape;
 pub use imp::DynamicMultiformShape;
 pub use imp::DynamicUniformShape;
 
-use crate::na;
+use crate::math;
 use crate::Positions;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct WorldCoordinate<const C: usize, const B: usize> {
-	pub chunk: na::Vector<i32, C>,
-	pub block: na::Vector<i32, B>,
+	pub chunk: math::Vector<i32, C>,
+	pub block: math::Vector<i32, B>,
 }
 
 pub trait Shape<const B: usize>: Sized {
-	fn extents(&self) -> na::Vector<usize, B>;
+	fn extents(&self) -> math::Vector<usize, B>;
 
 	fn positions(&self) -> Positions<B> {
 		Positions::new(self.extents())
@@ -24,32 +24,32 @@ pub trait Shape<const B: usize>: Sized {
 	fn capacity(&self) -> usize {
 		self.extents().into_iter().product()
 	}
-	fn position_to_index(&self, block: na::Vector<i32, B>) -> Option<usize> {
-		na::position_to_index(self.extents(), block)
+	fn position_to_index(&self, block: math::Vector<i32, B>) -> Option<usize> {
+		math::position_to_index(self.extents(), block)
 	}
-	fn index_to_position(&self, index: usize) -> Option<na::Vector<i32, B>> {
-		na::index_to_position(self.extents(), index)
+	fn index_to_position(&self, index: usize) -> Option<math::Vector<i32, B>> {
+		math::index_to_position(self.extents(), index)
 	}
 	fn world_to_chunk_block<const W: usize, const C: usize>(
 		&self,
-		world: na::Vector<i32, W>,
+		world: math::Vector<i32, W>,
 	) -> WorldCoordinate<C, B>
 	where
-		na::Const<B>: na::DimMax<na::Const<W>, Output = na::Const<W>>,
-		na::Const<C>: na::DimMax<na::Const<W>, Output = na::Const<W>>,
+		math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
+		math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 	{
-		na::world_to_chunk_block(self.extents(), world)
+		math::world_to_chunk_block(self.extents(), world)
 	}
 	fn chunk_block_to_world<const W: usize, const C: usize>(
 		&self,
-		chunk: na::Vector<i32, C>,
-		block: na::Vector<i32, B>,
-	) -> na::Vector<i32, W>
+		chunk: math::Vector<i32, C>,
+		block: math::Vector<i32, B>,
+	) -> math::Vector<i32, W>
 	where
-		na::Const<B>: na::DimMax<na::Const<W>, Output = na::Const<W>>,
-		na::Const<C>: na::DimMax<na::Const<W>, Output = na::Const<W>>,
+		math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
+		math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 	{
-		na::chunk_block_to_world(self.extents(), chunk, block)
+		math::chunk_block_to_world(self.extents(), chunk, block)
 	}
 }
 
@@ -75,7 +75,7 @@ impl<'a, T> Deref for Cow<'a, T> {
 }
 
 impl<'a, T: Shape<B>, const B: usize> Shape<B> for Cow<'a, T> {
-	fn extents(&self) -> na::Vector<usize, B> {
+	fn extents(&self) -> math::Vector<usize, B> {
 		self.deref().extents()
 	}
 }
@@ -105,10 +105,10 @@ mod tests {
 
 				for y in -1..2 {
 					for x in -1..2 {
-						let chunk = na::Vector::from([x, y]);
+						let chunk = math::Vector::from([x, y]);
 
 						world.chunk_insert(
-							na::Vector::from(chunk),
+							math::Vector::from(chunk),
 							CollumnChunk16x16x256::from_positions(|block| WorldCoordinate {
 								chunk,
 								block,
@@ -120,7 +120,7 @@ mod tests {
 				for z in 0..256 {
 					for y in -16..32 {
 						for x in -16..32 {
-							let result = world.world_to_chunk_block(na::Vector::from([x, y, z]));
+							let result = world.world_to_chunk_block(math::Vector::from([x, y, z]));
 
 							let &expected = world
 								.chunk(result.chunk)

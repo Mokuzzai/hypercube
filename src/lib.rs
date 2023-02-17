@@ -7,7 +7,8 @@ mod positions;
 mod shape;
 mod world;
 
-pub mod na;
+/// `Nalgebra` re-export
+pub mod math;
 
 /// Implementation of uniform [`Chunk`]s and [`World`]s
 pub mod uniform;

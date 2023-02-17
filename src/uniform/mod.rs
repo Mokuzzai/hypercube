@@ -1,5 +1,5 @@
 use crate::Cow;
-use crate::na;
+use crate::math;
 use crate::Chunk;
 use crate::DynamicUniformShape;
 use crate::Shape;
@@ -9,16 +9,16 @@ use crate::Shape;
 pub struct UniformShape<const S: usize, const D: usize>;
 
 impl<const S: usize, const B: usize> Shape<B> for UniformShape<S, B> {
-	fn extents(&self) -> na::Vector<usize, B> {
-		na::Vector::from_element(S)
+	fn extents(&self) -> math::Vector<usize, B> {
+		math::Vector::from_element(S)
 	}
 	fn capacity(&self) -> usize {
 		S.pow(B as u32)
 	}
-	fn position_to_index(&self, block: na::Vector<i32, B>) -> Option<usize> {
+	fn position_to_index(&self, block: math::Vector<i32, B>) -> Option<usize> {
 		DynamicUniformShape::<B>::new(S).position_to_index(block)
 	}
-	fn index_to_position(&self, index: usize) -> Option<na::Vector<i32, B>> {
+	fn index_to_position(&self, index: usize) -> Option<math::Vector<i32, B>> {
 		DynamicUniformShape::<B>::new(S).index_to_position(index)
 	}
 }
@@ -51,7 +51,7 @@ impl<T, const S: usize, const B: usize, const C: usize> UniformChunk<T, S, B, C>
 	pub fn from_indices(f: impl FnMut(usize) -> T) -> Self {
 		Self::new(std::array::from_fn(f))
 	}
-	pub fn from_positions(mut f: impl FnMut(na::Vector<i32, B>) -> T) -> Self {
+	pub fn from_positions(mut f: impl FnMut(math::Vector<i32, B>) -> T) -> Self {
 		Self::from_indices(|index| f(UniformShape::<S, B>.index_to_position(index).unwrap()))
 	}
 }

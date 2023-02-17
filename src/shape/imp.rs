@@ -12,8 +12,8 @@ impl<const B: usize> DynamicUniformShape<B> {
 }
 
 impl<const B: usize> Shape<B> for DynamicUniformShape<B> {
-	fn extents(&self) -> na::Vector<usize, B> {
-		na::Vector::from_element(self.stride)
+	fn extents(&self) -> math::Vector<usize, B> {
+		math::Vector::from_element(self.stride)
 	}
 	fn capacity(&self) -> usize {
 		self.stride.pow(B as u32)
@@ -28,23 +28,23 @@ impl<const B: usize> UniformShape<B> for DynamicUniformShape<B> {
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct DynamicMultiformShape<const B: usize> {
-	extents: na::Vector<usize, B>,
+	extents: math::Vector<usize, B>,
 }
 
 impl<const B: usize> DynamicMultiformShape<B> {
-	pub fn new(extents: na::Vector<usize, B>) -> Self {
+	pub fn new(extents: math::Vector<usize, B>) -> Self {
 		Self { extents }
 	}
 }
 
 impl<const B: usize> Default for DynamicMultiformShape<B> {
 	fn default() -> Self {
-		Self::new(na::Vector::from_element(0))
+		Self::new(math::Vector::from_element(0))
 	}
 }
 
 impl<const B: usize> Shape<B> for DynamicMultiformShape<B> {
-	fn extents(&self) -> na::Vector<usize, B> {
+	fn extents(&self) -> math::Vector<usize, B> {
 		self.extents
 	}
 }
@@ -62,7 +62,7 @@ impl<const B: usize> Default for DynamicShape<B> {
 }
 
 impl<const B: usize> Shape<B> for DynamicShape<B> {
-	fn extents(&self) -> na::Vector<usize, B> {
+	fn extents(&self) -> math::Vector<usize, B> {
 		match self {
 			Self::Uniform(uniform) => uniform.extents(),
 			Self::Multiform(multiform) => multiform.extents(),
