@@ -2,9 +2,7 @@ mod imp;
 
 use std::ops::Deref;
 
-pub use imp::DynamicShape;
-pub use imp::DynamicMultiformShape;
-pub use imp::DynamicUniformShape;
+pub use imp::*;
 
 use crate::math;
 use crate::Positions;
@@ -89,52 +87,43 @@ impl<'a, T: UniformShape<B>, const B: usize> UniformShape<B> for Cow<'a, T> {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::multiform::CollumnChunk16x16x256;
-	use crate::multiform::World2Collumns3;
+	use crate::CollumnChunk16x16x256;
+	use crate::World16x16x256;
 	use crate::Chunk;
 	use crate::WorldCoordinate;
 
 	#[test]
-	/// This test finishes `ok` but might overflow its stack
 	fn test_global_to_chunk_subchunk() {
-		std::thread::Builder::new()
-			.name(module_path!().into())
-			.stack_size(2usize.pow(26))
-			.spawn(|| {
-				let mut world = World2Collumns3::default();
+		let mut world = World16x16x256::default();
 
-				for y in -1..2 {
-					for x in -1..2 {
-						let chunk = math::Vector::from([x, y]);
+		for y in -1..2 {
+			for x in -1..2 {
+				let chunk = math::Vector::from([x, y]);
 
-						world.chunk_insert(
-							math::Vector::from(chunk),
-							CollumnChunk16x16x256::from_positions(|block| WorldCoordinate {
-								chunk,
-								block,
-							}),
-						);
-					}
+				world.chunk_insert(
+					math::Vector::from(chunk),
+					CollumnChunk16x16x256::from_position(|block| WorldCoordinate {
+						chunk,
+						block,
+					}),
+				);
+			}
+		}
+
+		for z in 0..256 {
+			for y in -16..32 {
+				for x in -16..32 {
+					let result = world.world_to_chunk_block(math::Vector::from([x, y, z]));
+
+					let &expected = world
+						.chunk(result.chunk)
+						.unwrap()
+						.get(result.block)
+						.unwrap();
+
+					assert_eq!(result, expected);
 				}
-
-				for z in 0..256 {
-					for y in -16..32 {
-						for x in -16..32 {
-							let result = world.world_to_chunk_block(math::Vector::from([x, y, z]));
-
-							let &expected = world
-								.chunk(result.chunk)
-								.unwrap()
-								.get(result.block)
-								.unwrap();
-
-							assert_eq!(result, expected);
-						}
-					}
-				}
-			})
-			.expect("failed to spawn thread")
-			.join()
-			.unwrap();
+			}
+		}
 	}
 }

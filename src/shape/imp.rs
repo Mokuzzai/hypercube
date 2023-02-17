@@ -1,6 +1,6 @@
 pub use super::*;
 
-#[derive(Debug, Default, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct DynamicUniformShape<const B: usize> {
 	stride: usize,
 }
@@ -26,7 +26,7 @@ impl<const B: usize> UniformShape<B> for DynamicUniformShape<B> {
 	}
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct DynamicMultiformShape<const B: usize> {
 	extents: math::Vector<usize, B>,
 }
@@ -49,7 +49,7 @@ impl<const B: usize> Shape<B> for DynamicMultiformShape<B> {
 	}
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum DynamicShape<const B: usize> {
 	Uniform(DynamicUniformShape<B>),
 	Multiform(DynamicMultiformShape<B>),
@@ -75,3 +75,31 @@ impl<const B: usize> Shape<B> for DynamicShape<B> {
 		}
 	}
 }
+
+mod macros {
+	#![no_implicit_prelude]
+
+	#[doc(hidden)]
+	#[macro_export]
+	macro_rules! multiform_chunk {
+		($Shape:ident, [$($N:ident),*; $D:expr]) => {
+			// #[doc = ::std::concat!("[`Shape`]($crate::shape): A hyperrectangle with `", stringify!($D), "` dimensions and sides of lengths ", $("`", stringify!($N), "` "),*)]
+			#[derive(Debug, Default, Eq, PartialEq, Copy, Clone, Hash)]
+			pub struct $Shape<$(const $N: ::std::primitive::usize),*>;
+
+			impl<$(const $N: ::std::primitive::usize),*> $crate::Shape<$D> for $Shape<$($N),*> {
+				fn extents(&self) -> $crate::math::Vector<::std::primitive::usize, $D> {
+					$crate::math::Vector::from([$($N),*])
+				}
+			}
+		}
+	}
+}
+
+crate::multiform_chunk! { Shape1, [X; 1] }
+crate::multiform_chunk! { Shape2, [X, Y; 2]  }
+crate::multiform_chunk! { Shape3, [X, Y, Z; 3]}
+crate::multiform_chunk! { Shape4, [X, Y, Z, W; 4] }
+
+
+

@@ -1,16 +1,17 @@
-
 use crate::math;
 use crate::Shape;
 use crate::Chunk;
 use crate::Cow;
 
+use std::array;
+
 #[derive(Debug)]
-pub struct Boxed<T, S: Shape<B>, const B: usize> {
-	buffer: Box<[T]>,
+pub struct Array<T, S, const B: usize, const N: usize> {
+	buffer: [T; N],
 	shape: S,
 }
 
-impl<T, S: Shape<B>, const B: usize> Chunk<B> for Boxed<T, S, B> {
+impl<T, S: Shape<B>, const B: usize, const N: usize> Chunk<B> for Array<T, S, B, N> {
 	type Item = T;
 	type Shape = S;
 
@@ -25,22 +26,14 @@ impl<T, S: Shape<B>, const B: usize> Chunk<B> for Boxed<T, S, B> {
 	}
 }
 
-impl<T, S: Shape<B>, const B: usize> Boxed<T, S, B> {
-	pub fn from_parts(shape: S, buffer: Box<[T]>) -> Self {
-		assert_eq!(shape.capacity(), buffer.len());
+impl<T, S: Shape<B>, const B: usize, const N: usize> Array<T, S, B, N> {
+	pub fn from_parts(shape: S, buffer: [T; N]) -> Self {
+		assert_eq!(shape.capacity(), N);
 
 		Self { shape, buffer }
 	}
 	pub fn from_shape_index(shape: S, mut f: impl FnMut(usize) -> T) -> Self {
-		let capacity = shape.capacity();
-
-		let mut buffer = Vec::with_capacity(capacity);
-
-		for index in 0..capacity {
-			buffer.push(f(index))
-		}
-
-		Self { buffer: buffer.into(), shape }
+		Self::from_parts(shape, array::from_fn(|index| f(index)))
 	}
 	pub fn from_shape_position(shape: S, mut f: impl FnMut(math::Vector<i32, B>) -> T) -> Self {
 		let extents = shape.extents();
@@ -64,15 +57,5 @@ impl<T, S: Shape<B>, const B: usize> Boxed<T, S, B> {
 		S: Default,
 	{
 		Self::from_shape_position(S::default(), f)
-	}
-}
-
-impl<T, S: Shape<B>, const B: usize> Default for Boxed<T, S, B>
-where
-	T: Default,
-	S: Default,
-{
-	fn default() -> Self {
-		Self::from_shape_default(S::default())
 	}
 }
