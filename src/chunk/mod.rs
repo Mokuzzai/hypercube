@@ -1,12 +1,11 @@
-
 mod with_payload;
 
 pub use with_payload::WithPayload;
 
 use crate::math;
+use crate::Cow;
 use crate::Positions;
 use crate::Shape;
-use crate::Cow;
 
 use std::slice;
 
@@ -36,10 +35,16 @@ pub trait Chunk<const B: usize> {
 		self.shape().positions()
 	}
 	fn item_positions(&self) -> ItemsPositions<Self::Item, B> {
-		ItemsPositions { extents: self.shape().extents(), inner: self.as_slice().iter().enumerate() }
+		ItemsPositions {
+			extents: self.shape().extents(),
+			inner: self.as_slice().iter().enumerate(),
+		}
 	}
 	fn item_positions_mut(&mut self) -> ItemsPositionsMut<Self::Item, B> {
-		ItemsPositionsMut { extents: self.shape().extents(), inner: self.as_mut_slice().iter_mut().enumerate() }
+		ItemsPositionsMut {
+			extents: self.shape().extents(),
+			inner: self.as_mut_slice().iter_mut().enumerate(),
+		}
 	}
 }
 
@@ -76,4 +81,3 @@ impl<'a, I, const B: usize> Iterator for ItemsPositionsMut<'a, I, B> {
 		Some((math::index_to_position(self.extents, index)?, item))
 	}
 }
-

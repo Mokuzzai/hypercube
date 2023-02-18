@@ -16,7 +16,8 @@ impl<const B: usize> Shape<B> for DynamicUniform<B> {
 		math::Vector::from_element(self.stride)
 	}
 	fn capacity(&self) -> usize {
-		self.stride.pow(B.try_into().expect("capacity greater than `u32::MAX`"))
+		self.stride
+			.pow(B.try_into().expect("more than `u32::MAX` dimensions"))
 	}
 }
 
@@ -100,6 +101,3 @@ crate::multiform_chunk! { Static1, [X; 1] }
 crate::multiform_chunk! { Static2, [X, Y; 2]  }
 crate::multiform_chunk! { Static3, [X, Y, Z; 3]}
 crate::multiform_chunk! { Static4, [X, Y, Z, W; 4] }
-
-
-

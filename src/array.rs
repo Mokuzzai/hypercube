@@ -1,8 +1,7 @@
-
 use crate::math;
-use crate::Shape;
 use crate::Chunk;
 use crate::Cow;
+use crate::Shape;
 
 use std::array;
 
@@ -42,7 +41,9 @@ impl<T, S: Shape<B>, const B: usize, const N: usize> Array<T, S, B, N> {
 	pub fn from_shape_position(shape: S, mut f: impl FnMut(math::Vector<i32, B>) -> T) -> Self {
 		let extents = shape.extents();
 
-		Self::from_shape_index(shape, |index| f(math::index_to_position(extents, index).unwrap_or_else(crate::lazy_unreachable!())))
+		Self::from_shape_index(shape, |index| {
+			f(math::index_to_position(extents, index).unwrap_or_else(crate::lazy_unreachable!()))
+		})
 	}
 	pub fn from_shape_default(shape: S) -> Self
 	where

@@ -4,6 +4,7 @@ use crate::Shape;
 use std::cmp::Ordering;
 
 #[derive(Clone)]
+#[repr(transparent)]
 pub struct OrderedVector<const D: usize> {
 	pub coordinates: math::Vector<i32, D>,
 }

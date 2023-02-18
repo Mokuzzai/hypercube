@@ -1,14 +1,18 @@
 pub use nalgebra;
-pub use nalgebra::Dim;
-pub use nalgebra::OVector;
-pub use nalgebra::Scalar;
 pub use nalgebra::dimension::Const;
 pub use nalgebra::dimension::DimMax;
 pub use nalgebra::dimension::DimMaximum;
+pub use nalgebra::Dim;
+pub use nalgebra::OVector;
+pub use nalgebra::Scalar;
 
 pub type Vector<T, const D: usize> = OVector<T, Const<D>>;
 
 use crate::WorldCoordinate;
+
+pub fn subdimension<const B: usize>(extents: Vector<usize, B>, limit: usize) -> usize {
+	extents.into_iter().take(limit).product()
+}
 
 pub fn position_to_index<const B: usize>(
 	extents: Vector<usize, B>,
@@ -23,9 +27,7 @@ pub fn position_to_index<const B: usize>(
 			return None;
 		}
 
-		let subd: usize = extents.into_iter().take(i).product();
-
-		Some(acc + coordinate * subd)
+		Some(acc + coordinate * subdimension(extents, i))
 	})
 }
 
@@ -33,25 +35,17 @@ pub fn index_to_position<const B: usize>(
 	extents: Vector<usize, B>,
 	index: usize,
 ) -> Option<Vector<i32, B>> {
-	let capacity = extents.into_iter().product();
-
-	let extents_i32: Vector<i32, B> = extents.cast();
-
-	if index >= capacity {
+	if index >= subdimension(extents, B) {
 		return None;
 	}
 
-	let mut out = Vector::from_element(0i32);
+	Some(Vector::from_iterator((0..B).map(|i| {
+		let subd = subdimension(extents, i);
 
-	let prev = 0;
+		let stride = index / subd % extents[i];
 
-	for i in 0..B {
-		let subd: i32 = extents_i32.into_iter().take(i).product();
-
-		out[i] = (index as i32 - prev) / subd % extents_i32[i]
-	}
-
-	Some(out)
+		stride.try_into().expect("coordinate greater than i32::MAX")
+	})))
 }
 
 pub fn position_to_index_offset<const B: usize>(
@@ -98,10 +92,10 @@ where
 	WorldCoordinate { chunk, block }
 }
 
+// TODO: fix this function
 pub fn chunk_block_to_world<const W: usize, const C: usize, const B: usize>(
 	extents: Vector<usize, B>,
-	chunk: Vector<i32, C>,
-	block: Vector<i32, B>,
+	WorldCoordinate { chunk, block }: WorldCoordinate<C, B>,
 ) -> Vector<i32, W>
 where
 	Const<B>: DimMax<Const<W>, Output = Const<W>>,
@@ -112,13 +106,19 @@ where
 	let chunk_shape_as_global = chunk_shape.resize_generic(Const::<W>, Const::<1>, 0);
 
 	let chunk_as_global = chunk.resize_generic(Const::<W>, Const::<1>, 0);
-	let block_as_global = block.resize_generic(Const::<W>, Const::<1>, 0);
+	let mut block_as_global = block.resize_generic(Const::<W>, Const::<1>, 0);
 
 	chunk_as_global + block_as_global.component_mul(&chunk_shape_as_global)
 }
 
 #[cfg(test)]
 mod test {
+	use crate::Boxed16x16x256;
+	use crate::Chunk;
+	use crate::Shape16x16x256;
+	use crate::Shape;
+	use crate::World16x16x256;
+	use crate::WorldCoordinate;
 	use super::*;
 
 	const X: usize = 5;
@@ -147,8 +147,7 @@ mod test {
 	#[test]
 	fn test_position_to_index() {
 		helper(|expected, position| {
-			let result =
-				position_to_index(Vector::from([X, Y, Z, W, V]), position.cast()).unwrap();
+			let result = position_to_index(Vector::from([X, Y, Z, W, V]), position.cast()).unwrap();
 
 			assert_eq!(expected as usize, result);
 		})
@@ -162,13 +161,10 @@ mod test {
 		})
 	}
 
-	use crate::Boxed16x16x256;
-	use crate::World16x16x256;
-	use crate::Chunk;
-	use crate::WorldCoordinate;
+
 
 	#[test]
-	fn test_global_to_chunk_subchunk() {
+	fn test_world_to_chunk_block() {
 		let mut world = World16x16x256::default();
 
 		for y in -1..2 {
@@ -177,10 +173,7 @@ mod test {
 
 				world.chunk_insert(
 					Vector::from(chunk),
-					Boxed16x16x256::from_position(|block| WorldCoordinate {
-						chunk,
-						block,
-					}),
+					Boxed16x16x256::from_position(|block| WorldCoordinate { chunk, block }),
 				);
 			}
 		}
@@ -190,12 +183,24 @@ mod test {
 				for x in -16..32 {
 					let result = world.world_to_chunk_block(Vector::from([x, y, z]));
 
-					let &expected = world
-						.chunk(result.chunk)
-						.unwrap()
-						.get(result.block)
-						.unwrap();
+					let &expected = world.block(result).unwrap();
 
+					assert_eq!(result, expected);
+				}
+			}
+		}
+	}
+	#[test]
+	fn test_chunk_block_to_world() {
+		let mut shape = Shape16x16x256::default();
+
+		for z in 0..256 {
+			for y in -16..32 {
+				for x in -16..32 {
+					let expected = Vector::from([x, y, z]);
+					let result = shape.chunk_block_to_world::<3, 3>(shape.world_to_chunk_block(Vector::from([x, y, z])));
+
+					eprintln!("{:?} {:?}", result, expected);
 					assert_eq!(result, expected);
 				}
 			}

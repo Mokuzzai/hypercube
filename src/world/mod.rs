@@ -1,7 +1,11 @@
 mod ordered_vector;
+mod entry;
+
+pub use entry::Entry;
+pub use entry::OccupiedEntry;
+pub use entry::VacantEntry;
 
 use ordered_vector::OrderedVector;
-
 use crate::math;
 use crate::Chunk;
 use crate::Shape;
@@ -16,7 +20,7 @@ use std::collections::BTreeMap;
 /// * `C`: dimensions in the plane in which [`Chunk`]s are located, usually equal to `W`
 /// * `B`: dimensions in a [`Chunk`]
 pub struct World<T: Chunk<B>, const W: usize, const C: usize, const B: usize> {
-	chunks: BTreeMap<OrderedVector<C>, T>,
+	inner: BTreeMap<OrderedVector<C>, T>,
 	shape: <T as Chunk<B>>::Shape,
 }
 
@@ -27,42 +31,38 @@ where
 {
 	pub fn new(shape: T::Shape) -> Self {
 		Self {
-			chunks: BTreeMap::new(),
+			inner: BTreeMap::new(),
 			shape,
 		}
 	}
 	pub fn chunk(&self, position: math::Vector<i32, C>) -> Option<&T> {
-		self.chunks.get(&OrderedVector::new(position))
+		self.inner.get(&OrderedVector::new(position))
 	}
 	pub fn chunk_mut(&mut self, position: math::Vector<i32, C>) -> Option<&mut T> {
-		self.chunks.get_mut(&OrderedVector::new(position))
+		self.inner.get_mut(&OrderedVector::new(position))
 	}
 	pub fn chunk_insert(&mut self, position: math::Vector<i32, C>, chunk: T) -> Option<T> {
-		self.chunks.insert(OrderedVector::new(position), chunk)
+		self.inner.insert(OrderedVector::new(position), chunk)
 	}
-	pub fn chunk_or_insert_with(
-		&mut self,
-		position: math::Vector<i32, C>,
-		chunk: impl FnMut() -> T,
-	) -> &mut T {
-		self.chunks
-			.entry(OrderedVector::new(position))
-			.or_insert_with(chunk)
+	pub fn entry(&mut self, position: math::Vector<i32, C>) -> Entry<T, C> {
+		let entry = self.inner.entry(OrderedVector::new(position));
+
+		Entry::from(entry)
 	}
 	pub fn iter(&self) -> impl Iterator<Item = (&math::Vector<i32, C>, &T)> {
-		self.chunks.iter().map(|(a, b)| (&a.coordinates, b))
+		self.inner.iter().map(|(a, b)| (&a.coordinates, b))
 	}
 	pub fn iter_mut(&mut self) -> impl Iterator<Item = (&math::Vector<i32, C>, &mut T)> {
-		self.chunks.iter_mut().map(|(a, b)| (&a.coordinates, b))
+		self.inner.iter_mut().map(|(a, b)| (&a.coordinates, b))
 	}
 	pub fn positions(&self) -> impl Iterator<Item = &math::Vector<i32, C>> {
-		self.chunks.keys().map(|a| &a.coordinates)
+		self.inner.keys().map(|a| &a.coordinates)
 	}
 	pub fn chunks(&self) -> impl Iterator<Item = &T> {
-		self.chunks.values()
+		self.inner.values()
 	}
 	pub fn chunks_mut(&mut self) -> impl Iterator<Item = &mut T> {
-		self.chunks.values_mut()
+		self.inner.values_mut()
 	}
 	pub fn world_to_chunk_block(&self, world: math::Vector<i32, W>) -> WorldCoordinate<C, B> {
 		self.shape.world_to_chunk_block(world)
@@ -73,15 +73,21 @@ where
 	pub fn world_to_block(&self, position: math::Vector<i32, W>) -> math::Vector<i32, B> {
 		self.world_to_chunk_block(position).block
 	}
-	pub fn block(&mut self, position: math::Vector<i32, W>) -> Option<&T::Item> {
-		let world = self.world_to_chunk_block(position);
-
-		self.chunk(world.chunk)?.get(world.block)
+	pub fn block(&mut self, position: WorldCoordinate<C, B>) -> Option<&T::Item> {
+		self.chunk(position.chunk)?.get(position.block)
 	}
-	pub fn block_mut(&mut self, position: math::Vector<i32, W>) -> Option<&mut T::Item> {
+	pub fn block_mut(&mut self, position: WorldCoordinate<C, B>) -> Option<&mut T::Item> {
+		self.chunk_mut(position.chunk)?.get_mut(position.block)
+	}
+	pub fn get_block(&mut self, position: math::Vector<i32, W>) -> Option<&T::Item> {
 		let world = self.world_to_chunk_block(position);
 
-		self.chunk_mut(world.chunk)?.get_mut(world.block)
+		self.block(world)
+	}
+	pub fn get_block_mut(&mut self, position: math::Vector<i32, W>) -> Option<&mut T::Item> {
+		let world = self.world_to_chunk_block(position);
+
+		self.block_mut(world)
 	}
 }
 
@@ -103,7 +109,7 @@ where
 {
 	fn clone(&self) -> Self {
 		Self {
-			chunks: self.chunks.clone(),
+			inner: self.inner.clone(),
 			shape: self.shape.clone(),
 		}
 	}
@@ -119,7 +125,7 @@ const _: () = {
 	{
 		fn fmt(&self, f: &mut Formatter) -> Result {
 			f.debug_struct("World")
-				.field("chunks", &self.chunks)
+				.field("chunks", &self.inner)
 				.field("shape", &self.shape)
 				.finish()
 		}

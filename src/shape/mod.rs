@@ -40,14 +40,13 @@ pub trait Shape<const B: usize>: Sized {
 	}
 	fn chunk_block_to_world<const W: usize, const C: usize>(
 		&self,
-		chunk: math::Vector<i32, C>,
-		block: math::Vector<i32, B>,
+		world: WorldCoordinate<C, B>,
 	) -> math::Vector<i32, W>
 	where
 		math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 		math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 	{
-		math::chunk_block_to_world(self.extents(), chunk, block)
+		math::chunk_block_to_world(self.extents(), world)
 	}
 }
 
