@@ -6,7 +6,7 @@ use crate::Shape;
 use std::array;
 
 /// Implentation of a stack allocated [`Chunk`] with staticly known capacity
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Array<T, S, const B: usize, const N: usize> {
 	shape: S,
 	buffer: [T; N],
@@ -35,7 +35,7 @@ impl<T, S: Shape<B>, const B: usize, const N: usize> Array<T, S, B, N> {
 
 		Self { shape, buffer }
 	}
-	pub fn from_shape_index(shape: S, mut f: impl FnMut(usize) -> T) -> Self {
+	pub fn from_shape_index(shape: S, f: impl FnMut(usize) -> T) -> Self {
 		Self::from_parts(shape, array::from_fn(f))
 	}
 	pub fn from_shape_position(shape: S, mut f: impl FnMut(math::Vector<i32, B>) -> T) -> Self {
@@ -51,16 +51,19 @@ impl<T, S: Shape<B>, const B: usize, const N: usize> Array<T, S, B, N> {
 	{
 		Self::from_shape_index(shape, |_| T::default())
 	}
-	pub fn from_index(mut f: impl FnMut(usize) -> T) -> Self
-	where
-		S: Default,
-	{
+}
+
+impl<T, S: Shape<B>, const B: usize, const N: usize> Array<T, S, B, N>
+where
+	S: Default,
+{
+	pub fn from_array(buffer: [T; N]) -> Self {
+		Self::from_parts(S::default(), buffer)
+	}
+	pub fn from_index(f: impl FnMut(usize) -> T) -> Self {
 		Self::from_shape_index(S::default(), f)
 	}
-	pub fn from_position(mut f: impl FnMut(math::Vector<i32, B>) -> T) -> Self
-	where
-		S: Default,
-	{
+	pub fn from_position(f: impl FnMut(math::Vector<i32, B>) -> T) -> Self {
 		Self::from_shape_position(S::default(), f)
 	}
 }

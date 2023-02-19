@@ -1,5 +1,5 @@
+use crate::dynamic::Multiform;
 use crate::math;
-use crate::DynamicMultiform;
 use crate::Shape;
 
 use std::ops::Range;
@@ -8,12 +8,12 @@ use std::ops::Range;
 #[derive(Debug, Default, Eq, PartialEq, Clone)]
 pub struct Positions<const B: usize> {
 	inner: Range<usize>,
-	shape: DynamicMultiform<B>,
+	shape: Multiform<B>,
 }
 
 impl<const B: usize> Positions<B> {
 	pub fn new(extents: math::Vector<usize, B>) -> Self {
-		let shape = DynamicMultiform::new(extents);
+		let shape = Multiform::new(extents);
 
 		Self {
 			inner: 0..shape.capacity(),

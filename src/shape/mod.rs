@@ -13,6 +13,31 @@ pub struct WorldCoordinate<const C: usize, const B: usize> {
 	pub block: math::Vector<i32, B>,
 }
 
+impl<const C: usize, const B: usize> WorldCoordinate<C, B> {
+	pub fn new(chunk: math::Vector<i32, C>, block: math::Vector<i32, B>) -> Self {
+		Self { chunk, block }
+	}
+	pub fn resize_generic<const C2: usize, const B2: usize>(
+		self,
+		c2: math::Const<C2>,
+		b2: math::Const<B2>,
+		element: i32,
+	) -> WorldCoordinate<C2, B2> {
+		WorldCoordinate::new(
+			self.chunk.resize_generic(c2, math::Const::<1>, element),
+			self.block.resize_generic(b2, math::Const::<1>, element),
+		)
+	}
+}
+
+impl<const C: usize, const B: usize> Default for WorldCoordinate<C, B> {
+	fn default() -> Self {
+		Self {
+			chunk: math::Vector::from([0; C]),
+			block: math::Vector::from([0; B]),
+		}
+	}
+}
 pub trait Shape<const B: usize>: Sized {
 	fn extents(&self) -> math::Vector<usize, B>;
 
@@ -36,7 +61,12 @@ pub trait Shape<const B: usize>: Sized {
 		math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 		math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 	{
-		math::world_to_chunk_block(self.extents(), world)
+		math::world_to_chunk_block(
+			self.extents()
+				.resize_generic(math::Const::<W>, math::Const::<1>, 0),
+			world.resize_generic(math::Const::<W>, math::Const::<1>, 0),
+		)
+		.resize_generic(math::Const::<C>, math::Const::<B>, 0)
 	}
 	fn chunk_block_to_world<const W: usize, const C: usize>(
 		&self,
@@ -46,7 +76,11 @@ pub trait Shape<const B: usize>: Sized {
 		math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 		math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 	{
-		math::chunk_block_to_world(self.extents(), world)
+		math::chunk_block_to_world(
+			self.extents()
+				.resize_generic(math::Const::<W>, math::Const::<1>, 0),
+			world.resize_generic(math::Const::<W>, math::Const::<W>, 0),
+		)
 	}
 }
 

@@ -1,11 +1,11 @@
-
-use crate::math;
 use super::OrderedVector;
+use crate::math;
 
 use std::collections::btree_map;
-// use std::alloc::Global;
 
-pub struct OccupiedEntry<'a, T, const B: usize> { inner: btree_map::OccupiedEntry<'a, OrderedVector<B>, T> }
+pub struct OccupiedEntry<'a, T, const B: usize> {
+	inner: btree_map::OccupiedEntry<'a, OrderedVector<B>, T>,
+}
 
 impl<'a, T, const B: usize> OccupiedEntry<'a, T, B> {
 	pub fn position(&self) -> &math::Vector<i32, B> {
@@ -33,7 +33,9 @@ impl<'a, T, const B: usize> OccupiedEntry<'a, T, B> {
 	}
 }
 
-pub struct VacantEntry<'a, T, const B: usize> { inner: btree_map::VacantEntry<'a, OrderedVector<B>, T> }
+pub struct VacantEntry<'a, T, const B: usize> {
+	inner: btree_map::VacantEntry<'a, OrderedVector<B>, T>,
+}
 
 impl<'a, T, const B: usize> VacantEntry<'a, T, B> {
 	pub fn position(&self) -> &math::Vector<i32, B> {
@@ -63,7 +65,7 @@ const _: () = {
 };
 
 #[derive(Debug)]
-pub enum Entry<'a, T, const B: usize>  {
+pub enum Entry<'a, T, const B: usize> {
 	Vacant(VacantEntry<'a, T, B>),
 	Occupied(OccupiedEntry<'a, T, B>),
 }
@@ -112,7 +114,10 @@ impl<'a, T, const B: usize> Entry<'a, T, B> {
 			Self::Vacant(entry) => entry.insert(default()),
 		}
 	}
-	pub fn or_insert_with_key<F: FnOnce(&math::Vector<i32, B>) -> T>(self, default: F) -> &'a mut T {
+	pub fn or_insert_with_key<F: FnOnce(&math::Vector<i32, B>) -> T>(
+		self,
+		default: F,
+	) -> &'a mut T {
 		match self {
 			Self::Occupied(entry) => entry.into_mut_chunk(),
 			Self::Vacant(entry) => {

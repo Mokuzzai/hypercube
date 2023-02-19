@@ -4,7 +4,7 @@ use crate::Cow;
 use crate::Shape;
 
 /// Implentation of a heap allocated [`Chunk`] with support for static and dynamic [`Shape`]s
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Boxed<T, S: Shape<B>, const B: usize> {
 	shape: S,
 	buffer: Box<[T]>,
@@ -60,16 +60,19 @@ impl<T, S: Shape<B>, const B: usize> Boxed<T, S, B> {
 	{
 		Self::from_shape_index(shape, |_| T::default())
 	}
-	pub fn from_index(mut f: impl FnMut(usize) -> T) -> Self
-	where
-		S: Default,
-	{
+}
+
+impl<T, S: Shape<B>, const B: usize> Boxed<T, S, B>
+where
+	S: Default,
+{
+	pub fn from_boxed_slice(buffer: Box<[T]>) -> Self {
+		Self::from_parts(S::default(), buffer)
+	}
+	pub fn from_index(f: impl FnMut(usize) -> T) -> Self {
 		Self::from_shape_index(S::default(), f)
 	}
-	pub fn from_position(mut f: impl FnMut(math::Vector<i32, B>) -> T) -> Self
-	where
-		S: Default,
-	{
+	pub fn from_position(f: impl FnMut(math::Vector<i32, B>) -> T) -> Self {
 		Self::from_shape_position(S::default(), f)
 	}
 }

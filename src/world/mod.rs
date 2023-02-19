@@ -1,11 +1,12 @@
-mod ordered_vector;
 mod entry;
+mod ordered_vector;
 
 pub use entry::Entry;
 pub use entry::OccupiedEntry;
 pub use entry::VacantEntry;
 
 use ordered_vector::OrderedVector;
+
 use crate::math;
 use crate::Chunk;
 use crate::Shape;
@@ -18,7 +19,7 @@ use std::collections::BTreeMap;
 /// * `T`: the type of [`Chunk`] we are storing
 /// * `W`: dimensions in the world
 /// * `C`: dimensions in the plane in which [`Chunk`]s are located, usually equal to `W`
-/// * `B`: dimensions in a [`Chunk`]
+/// * `B`: dimensions in a [`Chunk`])]
 pub struct World<T: Chunk<B>, const W: usize, const C: usize, const B: usize> {
 	inner: BTreeMap<OrderedVector<C>, T>,
 	shape: <T as Chunk<B>>::Shape,
@@ -35,13 +36,16 @@ where
 			shape,
 		}
 	}
+	pub fn shape(&self) -> &T::Shape {
+		&self.shape
+	}
 	pub fn chunk(&self, position: math::Vector<i32, C>) -> Option<&T> {
 		self.inner.get(&OrderedVector::new(position))
 	}
 	pub fn chunk_mut(&mut self, position: math::Vector<i32, C>) -> Option<&mut T> {
 		self.inner.get_mut(&OrderedVector::new(position))
 	}
-	pub fn chunk_insert(&mut self, position: math::Vector<i32, C>, chunk: T) -> Option<T> {
+	pub fn insert(&mut self, position: math::Vector<i32, C>, chunk: T) -> Option<T> {
 		self.inner.insert(OrderedVector::new(position), chunk)
 	}
 	pub fn entry(&mut self, position: math::Vector<i32, C>) -> Entry<T, C> {
@@ -73,13 +77,13 @@ where
 	pub fn world_to_block(&self, position: math::Vector<i32, W>) -> math::Vector<i32, B> {
 		self.world_to_chunk_block(position).block
 	}
-	pub fn block(&mut self, position: WorldCoordinate<C, B>) -> Option<&T::Item> {
+	pub fn block(&self, position: WorldCoordinate<C, B>) -> Option<&T::Item> {
 		self.chunk(position.chunk)?.get(position.block)
 	}
 	pub fn block_mut(&mut self, position: WorldCoordinate<C, B>) -> Option<&mut T::Item> {
 		self.chunk_mut(position.chunk)?.get_mut(position.block)
 	}
-	pub fn get_block(&mut self, position: math::Vector<i32, W>) -> Option<&T::Item> {
+	pub fn get_block(&self, position: math::Vector<i32, W>) -> Option<&T::Item> {
 		let world = self.world_to_chunk_block(position);
 
 		self.block(world)
@@ -99,6 +103,27 @@ where
 {
 	fn default() -> Self {
 		Self::new(T::Shape::default())
+	}
+}
+
+impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> Eq for World<T, W, C, B>
+where
+	T: Eq,
+	T::Shape: Eq,
+	math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
+	math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
+{
+}
+
+impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> PartialEq for World<T, W, C, B>
+where
+	T: PartialEq,
+	T::Shape: PartialEq,
+	math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
+	math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
+{
+	fn eq(&self, other: &Self) -> bool {
+		self.shape == other.shape && self.inner == other.inner
 	}
 }
 
@@ -133,7 +158,7 @@ const _: () = {
 };
 
 /// [`World`] with uniform dimensionality
-pub type UniformWorld<T, const D: usize> = World<T, D, D, D>;
+pub type Uniform<T, const D: usize> = World<T, D, D, D>;
 
 /// [`World`] with subuniform dimensionality
-pub type SubformWorld<T, const C: usize, const B: usize> = World<T, C, C, B>;
+pub type Subform<T, const C: usize, const B: usize> = World<T, C, C, B>;

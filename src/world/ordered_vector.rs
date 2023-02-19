@@ -1,5 +1,4 @@
 use crate::math;
-use crate::Shape;
 
 use std::cmp::Ordering;
 
