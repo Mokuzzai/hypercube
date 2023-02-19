@@ -1,5 +1,6 @@
 pub use super::*;
 
+/// Dynamic [`Shape`]s
 pub mod dynamic {
 	use super::*;
 
@@ -78,6 +79,7 @@ pub mod dynamic {
 	}
 }
 
+/// Static [`Shape`]s
 pub mod comp {
 	use super::*;
 

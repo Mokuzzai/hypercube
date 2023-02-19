@@ -80,72 +80,35 @@ mod test {
 		);
 	}
 
+	#[rustfmt::skip]
 	fn debug_coordinates() -> [(WorldCoordinate<2, 2>, Vector<i32, 2>); 16] {
+		let f = |a, b, c| {
+			(
+				WorldCoordinate::new(Vector::from(a), Vector::from(b)),
+				Vector::from(c),
+			)
+		};
+
 		[
-			(
-				WorldCoordinate::new(Vector::from([0, 0]), Vector::from([0, 0])),
-				Vector::from([0, 0]),
-			),
-			(
-				WorldCoordinate::new(Vector::from([0, 0]), Vector::from([1, 0])),
-				Vector::from([1, 0]),
-			),
-			(
-				WorldCoordinate::new(Vector::from([0, 0]), Vector::from([0, 1])),
-				Vector::from([0, 1]),
-			),
-			(
-				WorldCoordinate::new(Vector::from([0, 0]), Vector::from([1, 1])),
-				Vector::from([1, 1]),
-			),
-			(
-				WorldCoordinate::new(Vector::from([-1, -1]), Vector::from([0, 0])),
-				Vector::from([-2, -2]),
-			),
-			(
-				WorldCoordinate::new(Vector::from([-1, -1]), Vector::from([1, 0])),
-				Vector::from([-1, -2]),
-			),
-			(
-				WorldCoordinate::new(Vector::from([-1, -1]), Vector::from([0, 1])),
-				Vector::from([-2, -1]),
-			),
-			(
-				WorldCoordinate::new(Vector::from([-1, -1]), Vector::from([1, 1])),
-				Vector::from([-1, -1]),
-			),
-			(
-				WorldCoordinate::new(Vector::from([-1, 0]), Vector::from([0, 0])),
-				Vector::from([-2, 0]),
-			),
-			(
-				WorldCoordinate::new(Vector::from([-1, 0]), Vector::from([1, 0])),
-				Vector::from([-1, 0]),
-			),
-			(
-				WorldCoordinate::new(Vector::from([-1, 0]), Vector::from([0, 1])),
-				Vector::from([-2, 1]),
-			),
-			(
-				WorldCoordinate::new(Vector::from([-1, 0]), Vector::from([1, 1])),
-				Vector::from([-1, 1]),
-			),
-			(
-				WorldCoordinate::new(Vector::from([0, -1]), Vector::from([0, 0])),
-				Vector::from([0, -2]),
-			),
-			(
-				WorldCoordinate::new(Vector::from([0, -1]), Vector::from([1, 0])),
-				Vector::from([1, -2]),
-			),
-			(
-				WorldCoordinate::new(Vector::from([0, -1]), Vector::from([0, 1])),
-				Vector::from([0, -1]),
-			),
-			(
-				WorldCoordinate::new(Vector::from([0, -1]), Vector::from([1, 1])),
-				Vector::from([1, -1]),
-			),
+			f([ 0,  0], [ 0,  0], [ 0,  0]),
+			f([ 0,  0], [ 1,  0], [ 1,  0]),
+			f([ 0,  0], [ 0,  1], [ 0,  1]),
+			f([ 0,  0], [ 1,  1], [ 1,  1]),
+
+			f([-1, -1], [ 0,  0], [-2, -2]),
+			f([-1, -1], [ 1,  0], [-1, -2]),
+			f([-1, -1], [ 0,  1], [-2, -1]),
+			f([-1, -1], [ 1,  1], [-1, -1]),
+
+			f([-1,  0], [ 0,  0], [-2,  0]),
+			f([-1,  0], [ 1,  0], [-1,  0]),
+			f([-1,  0], [ 0,  1], [-2,  1]),
+			f([-1,  0], [ 1,  1], [-1,  1]),
+
+			f([ 0, -1], [ 0,  0], [ 0, -2]),
+			f([ 0, -1], [ 1,  0], [ 1, -2]),
+			f([ 0, -1], [ 0,  1], [ 0, -1]),
+			f([ 0, -1], [ 1,  1], [ 1, -1]),
 		]
 	}
 

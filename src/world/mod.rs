@@ -45,6 +45,16 @@ where
 	pub fn chunk_mut(&mut self, position: math::Vector<i32, C>) -> Option<&mut T> {
 		self.inner.get_mut(&OrderedVector::new(position))
 	}
+	pub fn get_chunk(&self, position: math::Vector<i32, W>) -> Option<&T> {
+		let chunk = self.world_to_chunk(position);
+
+		self.chunk(chunk)
+	}
+	pub fn get_chunk_mut(&mut self, position: math::Vector<i32, W>) -> Option<&mut T> {
+		let chunk = self.world_to_chunk(position);
+
+		self.chunk_mut(chunk)
+	}
 	pub fn insert(&mut self, position: math::Vector<i32, C>, chunk: T) -> Option<T> {
 		self.inner.insert(OrderedVector::new(position), chunk)
 	}
@@ -161,4 +171,4 @@ const _: () = {
 pub type Uniform<T, const D: usize> = World<T, D, D, D>;
 
 /// [`World`] with subuniform dimensionality
-pub type Subform<T, const C: usize, const B: usize> = World<T, C, C, B>;
+pub type Subform<T, const C: usize, const B: usize> = World<T, B, C, B>;
