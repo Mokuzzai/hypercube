@@ -41,7 +41,7 @@ pub mod dynamic {
 
 	impl<const B: usize> Default for Multiform<B> {
 		fn default() -> Self {
-			Self::new(math::Vector::from_element(0))
+			Self::new(math::Vector::from([0; B]))
 		}
 	}
 

@@ -35,6 +35,7 @@ pub type Boxed<T, S, const B: usize> = Buffer<Box<T>, S, B>;
 
 pub type Slice<T, S, const B: usize> = Buffer<[T], S, B>;
 
+// make sure that `Array` coerces to `slice`
 #[allow(unused)]
 fn test_trait_bounds<T, S, const B: usize, const N: usize>(array: &Array<T, S, B, N>) -> &Slice<T, S, B> {
 	array
