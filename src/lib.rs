@@ -31,7 +31,7 @@ pub use buffer::Buffer;
 pub type Array<T, S, const B: usize, const N: usize> = Buffer<[T; N], S, B>;
 
 /// Heap allocated [`Chunk`] with runtime determined capacity
-pub type Boxed<T, S, const B: usize> = Buffer<Box<T>, S, B>;
+pub type Boxed<T, S, const B: usize> = Buffer<Box<[T]>, S, B>;
 
 pub type Slice<T, S, const B: usize> = Buffer<[T], S, B>;
 
