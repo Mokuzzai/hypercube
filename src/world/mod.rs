@@ -39,6 +39,29 @@ where
 	pub fn shape(&self) -> &T::Shape {
 		&self.shape
 	}
+	pub fn positions(&self) -> impl Iterator<Item = &math::Vector<i32, C>> {
+		self.inner.keys().map(|a| &a.coordinates)
+	}
+	pub fn world_to_chunk_block(&self, world: math::Vector<i32, W>) -> WorldCoordinate<C, B> {
+		self.shape.world_to_chunk_block(world)
+	}
+	pub fn world_to_chunk(&self, position: math::Vector<i32, W>) -> math::Vector<i32, C> {
+		self.world_to_chunk_block(position).chunk
+	}
+	pub fn world_to_block(&self, position: math::Vector<i32, W>) -> math::Vector<i32, B> {
+		self.world_to_chunk_block(position).block
+	}
+	pub fn block(&self, position: WorldCoordinate<C, B>) -> Option<&T::Item> {
+		self.chunk(position.chunk)?.get(position.block)
+	}
+}
+
+/// # `Chunk` manipulation
+impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> World<T, W, C, B>
+where
+	math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
+	math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
+{
 	pub fn chunk(&self, position: math::Vector<i32, C>) -> Option<&T> {
 		self.inner.get(&OrderedVector::new(position))
 	}
@@ -69,27 +92,20 @@ where
 	pub fn iter_mut(&mut self) -> impl Iterator<Item = (&math::Vector<i32, C>, &mut T)> {
 		self.inner.iter_mut().map(|(a, b)| (&a.coordinates, b))
 	}
-	pub fn positions(&self) -> impl Iterator<Item = &math::Vector<i32, C>> {
-		self.inner.keys().map(|a| &a.coordinates)
-	}
 	pub fn chunks(&self) -> impl Iterator<Item = &T> {
 		self.inner.values()
 	}
 	pub fn chunks_mut(&mut self) -> impl Iterator<Item = &mut T> {
 		self.inner.values_mut()
 	}
-	pub fn world_to_chunk_block(&self, world: math::Vector<i32, W>) -> WorldCoordinate<C, B> {
-		self.shape.world_to_chunk_block(world)
-	}
-	pub fn world_to_chunk(&self, position: math::Vector<i32, W>) -> math::Vector<i32, C> {
-		self.world_to_chunk_block(position).chunk
-	}
-	pub fn world_to_block(&self, position: math::Vector<i32, W>) -> math::Vector<i32, B> {
-		self.world_to_chunk_block(position).block
-	}
-	pub fn block(&self, position: WorldCoordinate<C, B>) -> Option<&T::Item> {
-		self.chunk(position.chunk)?.get(position.block)
-	}
+}
+
+/// # Block manipulation
+impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> World<T, W, C, B>
+where
+	math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
+	math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
+{
 	pub fn block_mut(&mut self, position: WorldCoordinate<C, B>) -> Option<&mut T::Item> {
 		self.chunk_mut(position.chunk)?.get_mut(position.block)
 	}
@@ -103,6 +119,20 @@ where
 
 		self.block_mut(world)
 	}
+	pub fn replace_block_with(&mut self, world: math::Vector<i32, W>, chunk: impl FnOnce(math::Vector<i32, C>) -> T, block: T::Item) -> T::Item {
+		let world = self.world_to_chunk_block(world);
+
+		let slot = self.entry(world.chunk).or_insert_with_key(|&key| chunk(key));
+
+		std::mem::replace(slot.get_mut(world.block).unwrap_or_else(crate::lazy_unreachable!()), block)
+	}
+	pub fn replace_block_default(&mut self, world: math::Vector<i32, W>, block: T::Item) -> T::Item
+	where
+		T: Default,
+	{
+		self.replace_block_with(world, |_| T::default(), block)
+	}
+
 }
 
 impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> Default for World<T, W, C, B>
