@@ -2,6 +2,7 @@ mod with_payload;
 
 pub use with_payload::WithPayload;
 
+use crate::lazy_panic;
 use crate::math;
 use crate::Cow;
 use crate::Positions;
@@ -18,30 +19,43 @@ pub trait Chunk<const B: usize> {
 	fn as_slice(&self) -> &[Self::Item];
 	fn as_mut_slice(&mut self) -> &mut [Self::Item];
 
-	fn get(&self, position: math::Vector<i32, B>) -> Option<&Self::Item> {
+	fn get(&self, position: math::Position<B>) -> Option<&Self::Item> {
 		let index = self.shape().position_to_index(position)?;
 
 		self.as_slice().get(index)
 	}
-	fn get_mut(&mut self, position: math::Vector<i32, B>) -> Option<&mut Self::Item> {
+	fn get_mut(&mut self, position: math::Position<B>) -> Option<&mut Self::Item> {
 		let index = self.shape().position_to_index(position)?;
 
 		self.as_mut_slice().get_mut(index)
 	}
-	fn replace(&mut self, position: math::Vector<i32, B>, with: Self::Item) -> Option<Self::Item> {
+	fn get_replace(&mut self, position: math::Position<B>, with: Self::Item) -> Option<Self::Item> {
 		Some(std::mem::replace(self.get_mut(position)?, with))
+	}
+	fn block(&self, position: math::Position<B>) -> &Self::Item {
+		let extents = self.shape().extents();
+
+		self.get(position).unwrap_or_else(lazy_panic!("position: `{:?}` out of bounds ({:?})", position, extents))
+	}
+	fn block_mut(&mut self, position: math::Position<B>) -> &mut Self::Item {
+		let extents = self.shape().extents();
+
+		self.get_mut(position).unwrap_or_else(lazy_panic!("position: `{:?}` out of bounds ({:?})", position, extents))
+	}
+	fn replace(&mut self, position: math::Position<B>, with: Self::Item) -> Self::Item {
+		std::mem::replace(self.block_mut(position), with)
 	}
 	fn positions(&self) -> Positions<B> {
 		self.shape().positions()
 	}
-	fn item_positions(&self) -> ItemsPositions<Self::Item, B> {
-		ItemsPositions {
+	fn item_positions(&self) -> ItemPositions<Self::Item, B> {
+		ItemPositions {
 			extents: self.shape().extents(),
 			inner: self.as_slice().iter().enumerate(),
 		}
 	}
-	fn item_positions_mut(&mut self) -> ItemsPositionsMut<Self::Item, B> {
-		ItemsPositionsMut {
+	fn item_positions_mut(&mut self) -> ItemPositionsMut<Self::Item, B> {
+		ItemPositionsMut {
 			extents: self.shape().extents(),
 			inner: self.as_mut_slice().iter_mut().enumerate(),
 		}
@@ -51,13 +65,13 @@ pub trait Chunk<const B: usize> {
 use std::iter::Enumerate;
 
 #[derive(Debug)]
-pub struct ItemsPositions<'a, I, const B: usize> {
-	extents: math::Vector<usize, B>,
+pub struct ItemPositions<'a, I, const B: usize> {
+	extents: math::Extents<B>,
 	inner: Enumerate<slice::Iter<'a, I>>,
 }
 
-impl<'a, I, const B: usize> Iterator for ItemsPositions<'a, I, B> {
-	type Item = (math::Vector<i32, B>, &'a I);
+impl<'a, I, const B: usize> Iterator for ItemPositions<'a, I, B> {
+	type Item = (math::Position<B>, &'a I);
 
 	fn next(&mut self) -> Option<Self::Item> {
 		let (index, item) = self.inner.next()?;
@@ -67,13 +81,13 @@ impl<'a, I, const B: usize> Iterator for ItemsPositions<'a, I, B> {
 }
 
 #[derive(Debug)]
-pub struct ItemsPositionsMut<'a, I, const B: usize> {
-	extents: math::Vector<usize, B>,
+pub struct ItemPositionsMut<'a, I, const B: usize> {
+	extents: math::Extents<B>,
 	inner: Enumerate<slice::IterMut<'a, I>>,
 }
 
-impl<'a, I, const B: usize> Iterator for ItemsPositionsMut<'a, I, B> {
-	type Item = (math::Vector<i32, B>, &'a mut I);
+impl<'a, I, const B: usize> Iterator for ItemPositionsMut<'a, I, B> {
+	type Item = (math::Position<B>, &'a mut I);
 
 	fn next(&mut self) -> Option<Self::Item> {
 		let (index, item) = self.inner.next()?;

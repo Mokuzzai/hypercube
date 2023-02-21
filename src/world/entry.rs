@@ -3,15 +3,15 @@ use crate::math;
 
 use std::collections::btree_map;
 
-pub struct OccupiedEntry<'a, T, const B: usize> {
-	inner: btree_map::OccupiedEntry<'a, OrderedVector<B>, T>,
+pub struct OccupiedEntry<'a, T, const C: usize> {
+	inner: btree_map::OccupiedEntry<'a, OrderedVector<C>, T>,
 }
 
-impl<'a, T, const B: usize> OccupiedEntry<'a, T, B> {
-	pub fn position(&self) -> &math::Vector<i32, B> {
-		&self.inner.key().coordinates
+impl<'a, T, const C: usize> OccupiedEntry<'a, T, C> {
+	pub fn position(&self) -> math::Position<C> {
+		self.inner.key().coordinates
 	}
-	pub fn remove_entry(self) -> (math::Vector<i32, B>, T) {
+	pub fn remove_entry(self) -> (math::Position<C>, T) {
 		let (position, chunk) = self.inner.remove_entry();
 
 		(position.coordinates, chunk)
@@ -33,31 +33,31 @@ impl<'a, T, const B: usize> OccupiedEntry<'a, T, B> {
 	}
 }
 
-pub struct VacantEntry<'a, T, const B: usize> {
-	inner: btree_map::VacantEntry<'a, OrderedVector<B>, T>,
+pub struct VacantEntry<'a, T, const C: usize> {
+	inner: btree_map::VacantEntry<'a, OrderedVector<C>, T>,
 }
 
-impl<'a, T, const B: usize> VacantEntry<'a, T, B> {
-	pub fn position(&self) -> &math::Vector<i32, B> {
-		&self.inner.key().coordinates
+impl<'a, T, const C: usize> VacantEntry<'a, T, C> {
+	pub fn position(&self) -> math::Position<C> {
+		self.inner.key().coordinates
 	}
 	pub fn insert(self, value: T) -> &'a mut T {
 		self.inner.insert(value)
 	}
-	pub fn into_key(self) -> math::Vector<i32, B> {
+	pub fn into_key(self) -> math::Position<C> {
 		self.inner.into_key().coordinates
 	}
 }
 const _: () = {
 	use std::fmt::*;
 
-	impl<'a, T: Debug, const B: usize> Debug for OccupiedEntry<'a, T, B> {
+	impl<'a, T: Debug, const C: usize> Debug for OccupiedEntry<'a, T, C> {
 		fn fmt(&self, f: &mut Formatter) -> Result {
 			Debug::fmt(&self.inner, f)
 		}
 	}
 
-	impl<'a, T: Debug, const B: usize> Debug for VacantEntry<'a, T, B> {
+	impl<'a, T: Debug, const C: usize> Debug for VacantEntry<'a, T, C> {
 		fn fmt(&self, f: &mut Formatter) -> Result {
 			Debug::fmt(&self.inner, f)
 		}
@@ -65,13 +65,13 @@ const _: () = {
 };
 
 #[derive(Debug)]
-pub enum Entry<'a, T, const B: usize> {
-	Vacant(VacantEntry<'a, T, B>),
-	Occupied(OccupiedEntry<'a, T, B>),
+pub enum Entry<'a, T, const C: usize> {
+	Vacant(VacantEntry<'a, T, C>),
+	Occupied(OccupiedEntry<'a, T, C>),
 }
 
-impl<'a, T, const B: usize> Entry<'a, T, B> {
-	pub(crate) fn from(entry: btree_map::Entry<'a, OrderedVector<B>, T>) -> Self {
+impl<'a, T, const C: usize> Entry<'a, T, C> {
+	pub(crate) fn from(entry: btree_map::Entry<'a, OrderedVector<C>, T>) -> Self {
 		match entry {
 			btree_map::Entry::Vacant(inner) => Self::Vacant(VacantEntry { inner }),
 			btree_map::Entry::Occupied(inner) => Self::Occupied(OccupiedEntry { inner }),
@@ -96,7 +96,12 @@ impl<'a, T, const B: usize> Entry<'a, T, B> {
 			Self::Vacant(entry) => entry.insert(Default::default()),
 		}
 	}
-	pub fn position(&self) -> &math::Vector<i32, B> {
+	pub fn chunk_mut(&mut self) -> Option<&mut T> {
+		let Self::Occupied(entry) = self else { return None };
+
+		Some(entry.chunk_mut())
+	}
+	pub fn position(&self) -> math::Position<C> {
 		match *self {
 			Self::Occupied(ref entry) => entry.position(),
 			Self::Vacant(ref entry) => entry.position(),
@@ -114,7 +119,7 @@ impl<'a, T, const B: usize> Entry<'a, T, B> {
 			Self::Vacant(entry) => entry.insert(default()),
 		}
 	}
-	pub fn or_insert_with_key<F: FnOnce(&math::Vector<i32, B>) -> T>(
+	pub fn or_insert_with_key<F: FnOnce(math::Position<C>) -> T>(
 		self,
 		default: F,
 	) -> &'a mut T {

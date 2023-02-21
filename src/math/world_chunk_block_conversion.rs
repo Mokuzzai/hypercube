@@ -1,20 +1,22 @@
 use super::*;
 
 fn from_end_relative<const B: usize>(
-	extents: Vector<i32, B>,
-	position: Vector<i32, B>,
-) -> Vector<i32, B> {
+	extents: Extents<B>,
+	position: Position<B>,
+) -> Position<B> {
+	let extents = extents.cast();
+
 	(position + extents).zip_map(&extents, std::ops::Rem::rem)
 }
 
 pub fn world_to_chunk<const D: usize>(extents: Extents<D>, world: Position<D>) -> Position<D> {
-	world_to_chunk_block(extents, world).chunk
+	world_to_chunk_block(extents, world).0
 }
 
 pub fn world_to_block<const D: usize>(extents: Extents<D>, world: Position<D>) -> Position<D> {
-	let extents = extents.cast();
+	let extents_i32: Position<D> = extents.cast();
 
-	let block = world.zip_map(&extents, std::ops::Rem::rem);
+	let block = world.zip_map(&extents_i32, std::ops::Rem::rem);
 
 	// this position might be end-relative and if it is it should be converted
 	let block = from_end_relative(extents, block);
@@ -29,8 +31,8 @@ pub fn chunk_to_world<const D: usize>(extents: Extents<D>, chunk: Position<D>) -
 }
 
 pub fn world_to_chunk_block<const D: usize>(
-	extents: Vector<usize, D>,
-	world: Vector<i32, D>,
+	extents: Extents<D>,
+	world: Position<D>,
 ) -> WorldCoordinate<D, D> {
 	let block = world_to_block(extents, world);
 
@@ -38,13 +40,14 @@ pub fn world_to_chunk_block<const D: usize>(
 
 	let chunk = (world - block).component_div(&extents);
 
-	WorldCoordinate { chunk, block }
+	(chunk, block)
 }
 
 pub fn chunk_block_to_world<const D: usize>(
-	extents: Vector<usize, D>,
-	WorldCoordinate { chunk, block }: WorldCoordinate<D, D>,
-) -> Vector<i32, D> {
+	extents: Extents<D>,
+	chunk: Position<D>,
+	block: Position<D>,
+) -> Position<D> {
 	chunk_to_world(extents, chunk) + block
 }
 
@@ -56,36 +59,36 @@ mod test {
 
 	#[test]
 	fn test_from_end_relative() {
-		let extents = Vector::from([16; 3]);
+		let extents = Extents::from([16; 3]);
 
 		assert_eq!(
-			Vector::from([0; 3]),
-			from_end_relative(extents, Vector::from([0; 3]))
+			Position::from([0; 3]),
+			from_end_relative(extents, Position::from([0; 3]))
 		);
 		assert_eq!(
-			Vector::from([0; 3]),
-			from_end_relative(extents, Vector::from([-16; 3]))
+			Position::from([0; 3]),
+			from_end_relative(extents, Position::from([-16; 3]))
 		);
 		assert_eq!(
-			Vector::from([15; 3]),
-			from_end_relative(extents, Vector::from([-1; 3]))
+			Position::from([15; 3]),
+			from_end_relative(extents, Position::from([-1; 3]))
 		);
 		assert_eq!(
-			Vector::from([1; 3]),
-			from_end_relative(extents, Vector::from([1; 3]))
+			Position::from([1; 3]),
+			from_end_relative(extents, Position::from([1; 3]))
 		);
 		assert_eq!(
-			Vector::from([0, 0, 0]),
-			from_end_relative(extents, Vector::from([0, -16, 16]))
+			Position::from([0, 0, 0]),
+			from_end_relative(extents, Position::from([0, -16, 16]))
 		);
 	}
 
 	#[rustfmt::skip]
-	fn debug_coordinates() -> [(WorldCoordinate<2, 2>, Vector<i32, 2>); 16] {
+	fn debug_coordinates() -> [(WorldCoordinate<2, 2>, Position<2>); 16] {
 		let f = |a, b, c| {
 			(
-				WorldCoordinate::new(Vector::from(a), Vector::from(b)),
-				Vector::from(c),
+				(Position::from(a), Position::from(b)),
+				Position::from(c),
 			)
 		};
 
@@ -118,8 +121,8 @@ mod test {
 			eprintln!("{:?} {:?}", chunk_block, world);
 
 			assert_eq!(
-				world_to_chunk(Vector::from([2, 2]), world),
-				chunk_block.chunk
+				world_to_chunk(Extents::from([2, 2]), world),
+				chunk_block.0
 			);
 		}
 	}
@@ -130,19 +133,19 @@ mod test {
 			eprintln!("{:?} {:?}", chunk_block, world);
 
 			assert_eq!(
-				world_to_block(Vector::from([2, 2]), world),
-				chunk_block.block
+				world_to_block(Extents::from([2, 2]), world),
+				chunk_block.1
 			);
 		}
 	}
 
 	#[test]
 	fn test_chunk_block_to_world() {
-		for (chunk_block, world) in debug_coordinates() {
-			eprintln!("{:?} {:?}", chunk_block, world);
+		for ((chunk, block), world) in debug_coordinates() {
+			eprintln!("{:?} {:?} {:?}", chunk, block, world);
 
 			assert_eq!(
-				chunk_block_to_world(Vector::from([2, 2]), chunk_block),
+				chunk_block_to_world(Extents::from([2, 2]), chunk, block),
 				world
 			);
 		}

@@ -1,10 +1,9 @@
-// #![allow(unused)]
 #![warn(missing_debug_implementations)]
 
+pub mod buffer;
 pub mod chunk;
 pub mod positions;
 pub mod shape;
-pub mod buffer;
 pub mod world;
 
 pub mod math;
@@ -23,6 +22,7 @@ pub use shape::WorldCoordinate;
 pub use chunk::Chunk;
 pub use chunk::WithPayload;
 
+pub use positions::OffsetPositions;
 pub use positions::Positions;
 
 pub use buffer::Buffer;
@@ -37,12 +37,19 @@ pub type Slice<T, S, const B: usize> = Buffer<[T], S, B>;
 
 // make sure that `Array` coerces to `slice`
 #[allow(unused)]
-fn test_trait_bounds<T, S, const B: usize, const N: usize>(array: &Array<T, S, B, N>) -> &Slice<T, S, B> {
+fn test_trait_bounds<T, S, const B: usize, const N: usize>(
+	array: &Array<T, S, B, N>,
+) -> &Slice<T, S, B> {
 	array
+}
+
+macro_rules! lazy_panic {
+	($($t:tt)*) => {{ || panic!($($t)*)} }
 }
 
 macro_rules! lazy_unreachable {
 	($($t:tt)*) => {{ || unreachable!($($t)*)} }
 }
 
+pub(crate) use lazy_panic;
 pub(crate) use lazy_unreachable;

@@ -1,3 +1,4 @@
+use crate::lazy_unreachable;
 use crate::math;
 use crate::Chunk;
 use crate::Cow;
@@ -99,11 +100,14 @@ where
 
 		Self::from_parts(shape, T::from_fn(capacity, f))
 	}
-	pub fn from_shape_position(shape: S, mut f: impl FnMut(math::Vector<i32, B>) -> T::Item) -> Self {
+	pub fn from_shape_position(
+		shape: S,
+		mut f: impl FnMut(math::Position<B>) -> T::Item,
+	) -> Self {
 		let extents = shape.extents();
 
 		Self::from_shape_index(shape, |index| {
-			f(math::index_to_position(extents, index).unwrap_or_else(crate::lazy_unreachable!()))
+			f(math::index_to_position(extents, index).unwrap_or_else(lazy_unreachable!()))
 		})
 	}
 	pub fn from_shape_default(shape: S) -> Self
@@ -125,7 +129,7 @@ where
 	pub fn from_index(f: impl FnMut(usize) -> T::Item) -> Self {
 		Self::from_shape_index(S::default(), f)
 	}
-	pub fn from_position(f: impl FnMut(math::Vector<i32, B>) -> T::Item) -> Self {
+	pub fn from_position(f: impl FnMut(math::Position<B>) -> T::Item) -> Self {
 		Self::from_shape_position(S::default(), f)
 	}
 }
