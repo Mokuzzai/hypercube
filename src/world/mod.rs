@@ -3,7 +3,7 @@ mod ordered_vector;
 
 pub mod entry;
 
-use ordered_vector::OrderedVector;
+pub use ordered_vector::OrderedVector;
 
 use crate::math;
 use crate::Chunk;
