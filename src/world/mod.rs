@@ -5,7 +5,6 @@ pub mod entry;
 
 use ordered_vector::OrderedVector;
 
-use crate::lazy_unreachable;
 use crate::math;
 use crate::Chunk;
 use crate::Shape;
@@ -19,6 +18,11 @@ use std::collections::BTreeMap;
 /// * `W`: dimensions in the world
 /// * `C`: dimensions in the plane in which [`Chunk`]s are located, usually equal to `W`
 /// * `B`: dimensions in a [`Chunk`])]
+///
+/// # Correctnes
+///
+/// `T.shape().extents()` must be equal to `self.shape().extents()`
+///
 pub struct World<T: Chunk<B>, const W: usize, const C: usize, const B: usize> {
 	inner: BTreeMap<OrderedVector<C>, T>,
 	shape: <T as Chunk<B>>::Shape,
@@ -41,8 +45,8 @@ where
 	pub fn len(&self) -> usize {
 		self.inner.len()
 	}
-	pub fn positions(&self) -> impl Iterator<Item = &math::Position<C>> {
-		self.inner.keys().map(|a| &a.coordinates)
+	pub fn positions(&self) -> impl '_ + Iterator<Item = math::Position<C>> {
+		self.inner.keys().map(|a| a.coordinates)
 	}
 	pub fn chunk_block_to_world(&self, chunk: math::Position<C>, block: math::Position<B>) -> math::Position<W> {
 		self.shape.chunk_block_to_world(chunk, block)
@@ -203,12 +207,4 @@ mod tests {
 
 		assert_eq!(*world.chunk(math::Position::from([0; 2])).unwrap(), Array::from_buffer([true]));
 	}
-
-
-
-
-
-
-
-
 }
