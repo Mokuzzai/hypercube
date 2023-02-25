@@ -4,22 +4,14 @@ mod ordered_point;
 pub mod entry;
 
 pub use ordered_point::OrderedPoint;
+pub use entry::Entry;
+pub use entry::OccupiedEntry;
+pub use entry::VacantEntry;
 
 use crate::math::Point;
 
 use std::collections::BTreeMap;
 
-/// `W` dimensional space containing some [`Chunk`]s
-///
-/// * `T`: the type of [`Chunk`] we are storing
-/// * `W`: dimensions in the world
-/// * `C`: dimensions in the plane in which [`Chunk`]s are located, usually equal to `W`
-/// * `B`: dimensions in a [`Chunk`])]
-///
-/// # Correctnes
-///
-/// `T.shape().extents()` must be equal to `self.shape().extents()`
-///
 pub struct PositionMap<T, const D: usize> {
 	inner: BTreeMap<OrderedPoint<D>, T>,
 }

@@ -1,16 +1,11 @@
 
-mod ordered_point;
-
-pub mod entry;
-
-pub use ordered_point::OrderedPoint;
-
 use crate::math;
 use crate::Chunk;
 use crate::Shape;
 use crate::WorldCoordinate;
+use crate::math::Point;
 
-use std::collections::BTreeMap;
+use crate::position_map::*;
 
 /// `W` dimensional space containing some [`Chunk`]s
 ///
@@ -24,7 +19,7 @@ use std::collections::BTreeMap;
 /// `T.shape().extents()` must be equal to `self.shape().extents()`
 ///
 pub struct Multiform<T: Chunk<B>, const W: usize, const C: usize, const B: usize> {
-	inner: BTreeMap<OrderedPoint<C>, T>,
+	inner: PositionMap<T, C>,
 	shape: <T as Chunk<B>>::Shape,
 }
 
@@ -35,7 +30,7 @@ where
 {
 	pub fn new(shape: T::Shape) -> Self {
 		Self {
-			inner: BTreeMap::new(),
+			inner: PositionMap::new(),
 			shape,
 		}
 	}
@@ -45,26 +40,26 @@ where
 	pub fn len(&self) -> usize {
 		self.inner.len()
 	}
-	pub fn positions(&self) -> impl '_ + Iterator<Item = math::Point<i32, C>> {
-		self.inner.keys().map(|a| a.coordinates)
+	pub fn positions(&self) -> impl '_ + Iterator<Item = Point<i32, C>> {
+		self.inner.positions()
 	}
-	pub fn chunk_block_to_world(&self, chunk: math::Point<i32, C>, block: math::Point<i32, B>) -> math::Point<i32, W> {
+	pub fn chunk_block_to_world(&self, chunk: Point<i32, C>, block: Point<i32, B>) -> Point<i32, W> {
 		self.shape.chunk_block_to_world(chunk, block)
 	}
-	pub fn world_to_chunk_block(&self, world: math::Point<i32, W>) -> WorldCoordinate<C, B> {
+	pub fn world_to_chunk_block(&self, world: Point<i32, W>) -> WorldCoordinate<C, B> {
 		self.shape.world_to_chunk_block(world)
 	}
-	pub fn world_to_chunk(&self, position: math::Point<i32, W>) -> math::Point<i32, C> {
+	pub fn world_to_chunk(&self, position: Point<i32, W>) -> Point<i32, C> {
 		self.world_to_chunk_block(position).0
 	}
-	pub fn world_to_block(&self, position: math::Point<i32, W>) -> math::Point<i32, B> {
+	pub fn world_to_block(&self, position: Point<i32, W>) -> Point<i32, B> {
 		self.world_to_chunk_block(position).1
 	}
-	pub fn iter(&self) -> impl Iterator<Item = (math::Point<i32, C>, &T)> {
-		self.inner.iter().map(|(a, b)| (a.coordinates, b))
+	pub fn iter(&self) -> impl Iterator<Item = (Point<i32, C>, &T)> {
+		self.inner.iter()
 	}
-	pub fn iter_mut(&mut self) -> impl Iterator<Item = (math::Point<i32, C>, &mut T)> {
-		self.inner.iter_mut().map(|(a, b)| (a.coordinates, b))
+	pub fn iter_mut(&mut self) -> impl Iterator<Item = (Point<i32, C>, &mut T)> {
+		self.inner.iter_mut()
 	}
 }
 
@@ -74,22 +69,20 @@ where
 	math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 	math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 {
-	pub fn chunk(&self, position: math::Point<i32, C>) -> Option<&T> {
-		self.inner.get(&OrderedPoint::new(position))
+	pub fn chunk(&self, position: Point<i32, C>) -> Option<&T> {
+		self.inner.get(position)
 	}
-	pub fn chunk_mut(&mut self, position: math::Point<i32, C>) -> Option<&mut T> {
-		self.inner.get_mut(&OrderedPoint::new(position))
+	pub fn chunk_mut(&mut self, position: Point<i32, C>) -> Option<&mut T> {
+		self.inner.get_mut(position)
 	}
-	pub fn remove(&mut self, position: math::Point<i32, C>) -> Option<T> {
-		self.inner.remove(&OrderedPoint::new(position))
+	pub fn remove(&mut self, position: Point<i32, C>) -> Option<T> {
+		self.inner.remove(position)
 	}
-	pub fn insert(&mut self, position: math::Point<i32, C>, chunk: T) -> Option<T> {
-		self.inner.insert(OrderedPoint::new(position), chunk)
+	pub fn insert(&mut self, position: Point<i32, C>, chunk: T) -> Option<T> {
+		self.inner.insert(position, chunk)
 	}
-	pub fn entry(&mut self, position: math::Point<i32, C>) -> entry::Entry<T, C> {
-		let entry = self.inner.entry(OrderedPoint::new(position));
-
-		entry::Entry::from(entry)
+	pub fn entry(&mut self, position: Point<i32, C>) -> Entry<T, C> {
+		self.inner.entry(position)
 	}
 	pub fn chunks(&self) -> impl Iterator<Item = &T> {
 		self.inner.values()
@@ -108,15 +101,15 @@ where
 	pub fn block(&self, chunk: math::Point<i32, C>, block: math::Point<i32, B>) -> Option<&T::Item> {
 		self.chunk(chunk)?.get(block)
 	}
-	pub fn block_mut(&mut self, chunk: math::Point<i32, C>, block: math::Point<i32, B>) -> Option<&mut T::Item> {
+	pub fn block_mut(&mut self, chunk: Point<i32, C>, block: Point<i32, B>) -> Option<&mut T::Item> {
 		self.chunk_mut(chunk)?.get_mut(block)
 	}
-	pub fn get_block(&self, position: math::Point<i32, W>) -> Option<&T::Item> {
+	pub fn get_block(&self, position: Point<i32, W>) -> Option<&T::Item> {
 		let (chunk, block) = self.world_to_chunk_block(position);
 
 		self.block(chunk, block)
 	}
-	pub fn get_block_mut(&mut self, position: math::Point<i32, W>) -> Option<&mut T::Item> {
+	pub fn get_block_mut(&mut self, position: Point<i32, W>) -> Option<&mut T::Item> {
 		let (chunk, block) = self.world_to_chunk_block(position);
 
 		self.block_mut(chunk, block)
@@ -178,7 +171,7 @@ const _: () = {
 	{
 		fn fmt(&self, f: &mut Formatter) -> Result {
 			f.debug_struct("World")
-				.field("chunks", &self.inner)
+				.field("inner", &self.inner)
 				.field("shape", &self.shape)
 				.finish()
 		}

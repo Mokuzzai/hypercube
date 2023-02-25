@@ -6,8 +6,10 @@ pub mod chunk;
 pub mod positions;
 pub mod shape;
 pub mod world;
-pub mod map;
+pub mod position_map;
 pub mod math;
+
+pub use position_map::PositionMap;
 
 pub use world::Multiform;
 pub use world::Uniform;
