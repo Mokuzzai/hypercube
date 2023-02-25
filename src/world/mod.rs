@@ -1,9 +1,9 @@
 
-mod ordered_vector;
+mod ordered_point;
 
 pub mod entry;
 
-pub use ordered_vector::OrderedPoint;
+pub use ordered_point::OrderedPoint;
 
 use crate::math;
 use crate::Chunk;

@@ -94,6 +94,12 @@ pub mod ct {
 				#[derive(Debug, Default, Eq, PartialEq, Copy, Clone, Hash)]
 				pub struct $Shape<$(const $N: ::std::primitive::usize),*>;
 
+				impl<$(const $N: ::std::primitive::usize),*> $Shape<$($N),*> {
+					pub const fn new() -> Self {
+						$Shape
+					}
+				}
+
 				impl<$(const $N: ::std::primitive::usize),*> $crate::Shape<$D> for $Shape<$($N),*> {
 					fn extents(&self) -> $crate::math::Vector<usize, $D> {
 						$crate::math::Vector::from([$($N),*])
@@ -110,6 +116,12 @@ pub mod ct {
 
 	#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 	pub struct Uniform<const S: usize, const D: usize>;
+
+	impl<const S: usize, const B: usize> Uniform<S, B> {
+		pub const fn new() -> Self {
+			Uniform
+		}
+	}
 
 	impl<const S: usize, const B: usize> Shape<B> for Uniform<S, B> {
 		fn extents(&self) -> math::Vector<usize, B> {

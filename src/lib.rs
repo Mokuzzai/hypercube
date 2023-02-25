@@ -1,11 +1,12 @@
 #![warn(missing_debug_implementations)]
 
+pub mod experimental;
 pub mod buffer;
 pub mod chunk;
 pub mod positions;
 pub mod shape;
 pub mod world;
-
+pub mod map;
 pub mod math;
 
 pub use world::Multiform;
