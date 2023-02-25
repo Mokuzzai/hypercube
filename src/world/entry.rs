@@ -1,17 +1,17 @@
-use super::OrderedVector;
+use super::OrderedPoint;
 use crate::math;
 
 use std::collections::btree_map;
 
 pub struct OccupiedEntry<'a, T, const C: usize> {
-	inner: btree_map::OccupiedEntry<'a, OrderedVector<C>, T>,
+	inner: btree_map::OccupiedEntry<'a, OrderedPoint<C>, T>,
 }
 
 impl<'a, T, const C: usize> OccupiedEntry<'a, T, C> {
-	pub fn position(&self) -> math::Position<C> {
+	pub fn position(&self) -> math::Point<i32, C> {
 		self.inner.key().coordinates
 	}
-	pub fn remove_entry(self) -> (math::Position<C>, T) {
+	pub fn remove_entry(self) -> (math::Point<i32, C>, T) {
 		let (position, chunk) = self.inner.remove_entry();
 
 		(position.coordinates, chunk)
@@ -34,17 +34,17 @@ impl<'a, T, const C: usize> OccupiedEntry<'a, T, C> {
 }
 
 pub struct VacantEntry<'a, T, const C: usize> {
-	inner: btree_map::VacantEntry<'a, OrderedVector<C>, T>,
+	inner: btree_map::VacantEntry<'a, OrderedPoint<C>, T>,
 }
 
 impl<'a, T, const C: usize> VacantEntry<'a, T, C> {
-	pub fn position(&self) -> math::Position<C> {
+	pub fn position(&self) -> math::Point<i32, C> {
 		self.inner.key().coordinates
 	}
 	pub fn insert(self, value: T) -> &'a mut T {
 		self.inner.insert(value)
 	}
-	pub fn into_key(self) -> math::Position<C> {
+	pub fn into_key(self) -> math::Point<i32, C> {
 		self.inner.into_key().coordinates
 	}
 }
@@ -71,7 +71,7 @@ pub enum Entry<'a, T, const C: usize> {
 }
 
 impl<'a, T, const C: usize> Entry<'a, T, C> {
-	pub(crate) fn from(entry: btree_map::Entry<'a, OrderedVector<C>, T>) -> Self {
+	pub(crate) fn from(entry: btree_map::Entry<'a, OrderedPoint<C>, T>) -> Self {
 		match entry {
 			btree_map::Entry::Vacant(inner) => Self::Vacant(VacantEntry { inner }),
 			btree_map::Entry::Occupied(inner) => Self::Occupied(OccupiedEntry { inner }),
@@ -101,7 +101,7 @@ impl<'a, T, const C: usize> Entry<'a, T, C> {
 
 		Some(entry.chunk_mut())
 	}
-	pub fn position(&self) -> math::Position<C> {
+	pub fn position(&self) -> math::Point<i32, C> {
 		match *self {
 			Self::Occupied(ref entry) => entry.position(),
 			Self::Vacant(ref entry) => entry.position(),
@@ -119,7 +119,7 @@ impl<'a, T, const C: usize> Entry<'a, T, C> {
 			Self::Vacant(entry) => entry.insert(default()),
 		}
 	}
-	pub fn or_insert_with_key<F: FnOnce(math::Position<C>) -> T>(
+	pub fn or_insert_with_key<F: FnOnce(math::Point<i32, C>) -> T>(
 		self,
 		default: F,
 	) -> &'a mut T {

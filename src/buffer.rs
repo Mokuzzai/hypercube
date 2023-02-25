@@ -102,7 +102,7 @@ where
 	}
 	pub fn from_shape_position(
 		shape: S,
-		mut f: impl FnMut(math::Position<B>) -> T::Item,
+		mut f: impl FnMut(math::Point<i32, B>) -> T::Item,
 	) -> Self {
 		let extents = shape.extents();
 
@@ -129,7 +129,7 @@ where
 	pub fn from_index(f: impl FnMut(usize) -> T::Item) -> Self {
 		Self::from_shape_index(S::default(), f)
 	}
-	pub fn from_position(f: impl FnMut(math::Position<B>) -> T::Item) -> Self {
+	pub fn from_position(f: impl FnMut(math::Point<i32, B>) -> T::Item) -> Self {
 		Self::from_shape_position(S::default(), f)
 	}
 }

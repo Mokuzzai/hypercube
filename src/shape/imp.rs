@@ -1,7 +1,7 @@
 pub use super::*;
 
-/// Dynamic [`Shape`]s
-pub mod dynamic {
+/// Runtime [`Shape`]s
+pub mod rt {
 	use super::*;
 
 	#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
@@ -15,8 +15,8 @@ pub mod dynamic {
 	}
 
 	impl<const B: usize> Shape<B> for Uniform<B> {
-		fn extents(&self) -> math::Extents<B> {
-			math::Extents::from([self.stride(); B])
+		fn extents(&self) -> math::Vector<usize, B> {
+			math::Vector::from_element(self.stride())
 		}
 		fn capacity(&self) -> usize {
 			self.stride()
@@ -31,22 +31,22 @@ pub mod dynamic {
 	}
 	#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 	pub struct Multiform<const B: usize> {
-		extents: math::Extents<B>,
+		extents: math::Vector<usize, B>,
 	}
 	impl<const B: usize> Multiform<B> {
-		pub fn new(extents: math::Extents<B>) -> Self {
+		pub fn new(extents: math::Vector<usize, B>) -> Self {
 			Self { extents }
 		}
 	}
 
 	impl<const B: usize> Default for Multiform<B> {
 		fn default() -> Self {
-			Self::new(math::Extents::from([0; B]))
+			Self::new(math::Vector::from_element(0))
 		}
 	}
 
 	impl<const B: usize> Shape<B> for Multiform<B> {
-		fn extents(&self) -> math::Extents<B> {
+		fn extents(&self) -> math::Vector<usize, B> {
 			self.extents
 		}
 	}
@@ -64,7 +64,7 @@ pub mod dynamic {
 	}
 
 	impl<const B: usize> Shape<B> for Dynamic<B> {
-		fn extents(&self) -> math::Extents<B> {
+		fn extents(&self) -> math::Vector<usize, B> {
 			match self {
 				Self::Uniform(uniform) => uniform.extents(),
 				Self::Multiform(multiform) => multiform.extents(),
@@ -79,8 +79,8 @@ pub mod dynamic {
 	}
 }
 
-/// Static [`Shape`]s
-pub mod comp {
+/// Compile time [`Shape`]s
+pub mod ct {
 	use super::*;
 
 	mod macros {
@@ -95,8 +95,8 @@ pub mod comp {
 				pub struct $Shape<$(const $N: ::std::primitive::usize),*>;
 
 				impl<$(const $N: ::std::primitive::usize),*> $crate::Shape<$D> for $Shape<$($N),*> {
-					fn extents(&self) -> $crate::math::Extents<$D> {
-						$crate::math::Extents::from([$($N),*])
+					fn extents(&self) -> $crate::math::Vector<usize, $D> {
+						$crate::math::Vector::from([$($N),*])
 					}
 				}
 			}
@@ -112,8 +112,8 @@ pub mod comp {
 	pub struct Uniform<const S: usize, const D: usize>;
 
 	impl<const S: usize, const B: usize> Shape<B> for Uniform<S, B> {
-		fn extents(&self) -> math::Extents<B> {
-			math::Extents::from([self.stride(); B])
+		fn extents(&self) -> math::Vector<usize, B> {
+			math::Vector::from_element(self.stride())
 		}
 		fn capacity(&self) -> usize {
 			self.stride()

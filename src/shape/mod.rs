@@ -5,13 +5,13 @@ use std::ops::Deref;
 pub use imp::*;
 
 pub type UniformWorldCoordinate<const D: usize> = WorldCoordinate<D, D>;
-pub type WorldCoordinate<const C: usize, const B: usize> = (math::Position<C>, math::Position<B>);
+pub type WorldCoordinate<const C: usize, const B: usize> = (math::Point<i32, C>, math::Point<i32, B>);
 
 use crate::math;
 use crate::Positions;
 
 pub trait Shape<const B: usize>: Sized {
-	fn extents(&self) -> math::Extents< B>;
+	fn extents(&self) -> math::Vector<usize, B>;
 
 	fn positions(&self) -> Positions<B> {
 		Positions::new(self.extents())
@@ -19,15 +19,15 @@ pub trait Shape<const B: usize>: Sized {
 	fn capacity(&self) -> usize {
 		self.extents().into_iter().product()
 	}
-	fn position_to_index(&self, block: math::Position<B>) -> Option<usize> {
+	fn position_to_index(&self, block: math::Point<i32, B>) -> Option<usize> {
 		math::position_to_index(self.extents(), block)
 	}
-	fn index_to_position(&self, index: usize) -> Option<math::Position<B>> {
+	fn index_to_position(&self, index: usize) -> Option<math::Point<i32, B>> {
 		math::index_to_position(self.extents(), index)
 	}
 	fn world_to_chunk_block<const W: usize, const C: usize>(
 		&self,
-		world: math::Position<W>,
+		world: math::Point<i32, W>,
 	) -> WorldCoordinate<C, B>
 	where
 		math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
@@ -36,19 +36,19 @@ pub trait Shape<const B: usize>: Sized {
 		let (chunk, block) = math::world_to_chunk_block(
 			self.extents()
 				.resize_generic(math::Const::<W>, math::Const::<1>, 0),
-			world.resize_generic(math::Const::<W>, math::Const::<1>, 0),
+			world.coords.resize_generic(math::Const::<W>, math::Const::<1>, 0).into(),
 		);
 
 		(
-			chunk.resize_generic(math::Const::<C>, math::Const::<1>, 0),
-			block.resize_generic(math::Const::<B>, math::Const::<1>, 0),
+			chunk.coords.resize_generic(math::Const::<C>, math::Const::<1>, 0).into(),
+			block.coords.resize_generic(math::Const::<B>, math::Const::<1>, 0).into(),
 		)
 	}
 	fn chunk_block_to_world<const W: usize, const C: usize>(
 		&self,
-		chunk: math::Position<C>,
-		block: math::Position<B>,
-	) -> math::Position<W>
+		chunk: math::Point<i32, C>,
+		block: math::Point<i32, B>,
+	) -> math::Point<i32, W>
 	where
 		math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 		math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
@@ -56,8 +56,8 @@ pub trait Shape<const B: usize>: Sized {
 		math::chunk_block_to_world(
 			self.extents()
 				.resize_generic(math::Const::<W>, math::Const::<1>, 0),
-			chunk.resize_generic(math::Const::<W>, math::Const::<1>, 0),
-			block.resize_generic(math::Const::<W>, math::Const::<1>, 0),
+			chunk.coords.resize_generic(math::Const::<W>, math::Const::<1>, 0).into(),
+			block.coords.resize_generic(math::Const::<W>, math::Const::<1>, 0).into(),
 		)
 	}
 }
@@ -84,7 +84,7 @@ impl<'a, T> Deref for Cow<'a, T> {
 }
 
 impl<'a, T: Shape<B>, const B: usize> Shape<B> for Cow<'a, T> {
-	fn extents(&self) -> math::Extents<B> {
+	fn extents(&self) -> math::Vector<usize, B> {
 		self.deref().extents()
 	}
 }

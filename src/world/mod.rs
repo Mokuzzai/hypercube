@@ -3,7 +3,7 @@ mod ordered_vector;
 
 pub mod entry;
 
-pub use ordered_vector::OrderedVector;
+pub use ordered_vector::OrderedPoint;
 
 use crate::math;
 use crate::Chunk;
@@ -23,12 +23,12 @@ use std::collections::BTreeMap;
 ///
 /// `T.shape().extents()` must be equal to `self.shape().extents()`
 ///
-pub struct World<T: Chunk<B>, const W: usize, const C: usize, const B: usize> {
-	inner: BTreeMap<OrderedVector<C>, T>,
+pub struct Multiform<T: Chunk<B>, const W: usize, const C: usize, const B: usize> {
+	inner: BTreeMap<OrderedPoint<C>, T>,
 	shape: <T as Chunk<B>>::Shape,
 }
 
-impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> World<T, W, C, B>
+impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> Multiform<T, W, C, B>
 where
 	math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 	math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
@@ -45,49 +45,49 @@ where
 	pub fn len(&self) -> usize {
 		self.inner.len()
 	}
-	pub fn positions(&self) -> impl '_ + Iterator<Item = math::Position<C>> {
+	pub fn positions(&self) -> impl '_ + Iterator<Item = math::Point<i32, C>> {
 		self.inner.keys().map(|a| a.coordinates)
 	}
-	pub fn chunk_block_to_world(&self, chunk: math::Position<C>, block: math::Position<B>) -> math::Position<W> {
+	pub fn chunk_block_to_world(&self, chunk: math::Point<i32, C>, block: math::Point<i32, B>) -> math::Point<i32, W> {
 		self.shape.chunk_block_to_world(chunk, block)
 	}
-	pub fn world_to_chunk_block(&self, world: math::Position<W>) -> WorldCoordinate<C, B> {
+	pub fn world_to_chunk_block(&self, world: math::Point<i32, W>) -> WorldCoordinate<C, B> {
 		self.shape.world_to_chunk_block(world)
 	}
-	pub fn world_to_chunk(&self, position: math::Position<W>) -> math::Position<C> {
+	pub fn world_to_chunk(&self, position: math::Point<i32, W>) -> math::Point<i32, C> {
 		self.world_to_chunk_block(position).0
 	}
-	pub fn world_to_block(&self, position: math::Position<W>) -> math::Position<B> {
+	pub fn world_to_block(&self, position: math::Point<i32, W>) -> math::Point<i32, B> {
 		self.world_to_chunk_block(position).1
 	}
-	pub fn iter(&self) -> impl Iterator<Item = (math::Position<C>, &T)> {
+	pub fn iter(&self) -> impl Iterator<Item = (math::Point<i32, C>, &T)> {
 		self.inner.iter().map(|(a, b)| (a.coordinates, b))
 	}
-	pub fn iter_mut(&mut self) -> impl Iterator<Item = (math::Position<C>, &mut T)> {
+	pub fn iter_mut(&mut self) -> impl Iterator<Item = (math::Point<i32, C>, &mut T)> {
 		self.inner.iter_mut().map(|(a, b)| (a.coordinates, b))
 	}
 }
 
 /// # `Chunk` manipulation
-impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> World<T, W, C, B>
+impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> Multiform<T, W, C, B>
 where
 	math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 	math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 {
-	pub fn chunk(&self, position: math::Position<C>) -> Option<&T> {
-		self.inner.get(&OrderedVector::new(position))
+	pub fn chunk(&self, position: math::Point<i32, C>) -> Option<&T> {
+		self.inner.get(&OrderedPoint::new(position))
 	}
-	pub fn chunk_mut(&mut self, position: math::Position<C>) -> Option<&mut T> {
-		self.inner.get_mut(&OrderedVector::new(position))
+	pub fn chunk_mut(&mut self, position: math::Point<i32, C>) -> Option<&mut T> {
+		self.inner.get_mut(&OrderedPoint::new(position))
 	}
-	pub fn remove(&mut self, position: math::Position<C>) -> Option<T> {
-		self.inner.remove(&OrderedVector::new(position))
+	pub fn remove(&mut self, position: math::Point<i32, C>) -> Option<T> {
+		self.inner.remove(&OrderedPoint::new(position))
 	}
-	pub fn insert(&mut self, position: math::Position<C>, chunk: T) -> Option<T> {
-		self.inner.insert(OrderedVector::new(position), chunk)
+	pub fn insert(&mut self, position: math::Point<i32, C>, chunk: T) -> Option<T> {
+		self.inner.insert(OrderedPoint::new(position), chunk)
 	}
-	pub fn entry(&mut self, position: math::Position<C>) -> entry::Entry<T, C> {
-		let entry = self.inner.entry(OrderedVector::new(position));
+	pub fn entry(&mut self, position: math::Point<i32, C>) -> entry::Entry<T, C> {
+		let entry = self.inner.entry(OrderedPoint::new(position));
 
 		entry::Entry::from(entry)
 	}
@@ -100,30 +100,30 @@ where
 }
 
 /// # Block manipulation
-impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> World<T, W, C, B>
+impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> Multiform<T, W, C, B>
 where
 	math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 	math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 {
-	pub fn block(&self, chunk: math::Position<C>, block: math::Position<B>) -> Option<&T::Item> {
+	pub fn block(&self, chunk: math::Point<i32, C>, block: math::Point<i32, B>) -> Option<&T::Item> {
 		self.chunk(chunk)?.get(block)
 	}
-	pub fn block_mut(&mut self, chunk: math::Position<C>, block: math::Position<B>) -> Option<&mut T::Item> {
+	pub fn block_mut(&mut self, chunk: math::Point<i32, C>, block: math::Point<i32, B>) -> Option<&mut T::Item> {
 		self.chunk_mut(chunk)?.get_mut(block)
 	}
-	pub fn get_block(&self, position: math::Position<W>) -> Option<&T::Item> {
+	pub fn get_block(&self, position: math::Point<i32, W>) -> Option<&T::Item> {
 		let (chunk, block) = self.world_to_chunk_block(position);
 
 		self.block(chunk, block)
 	}
-	pub fn get_block_mut(&mut self, position: math::Position<W>) -> Option<&mut T::Item> {
+	pub fn get_block_mut(&mut self, position: math::Point<i32, W>) -> Option<&mut T::Item> {
 		let (chunk, block) = self.world_to_chunk_block(position);
 
 		self.block_mut(chunk, block)
 	}
 }
 
-impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> Default for World<T, W, C, B>
+impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> Default for Multiform<T, W, C, B>
 where
 	<T as Chunk<B>>::Shape: Default,
 	math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
@@ -134,7 +134,7 @@ where
 	}
 }
 
-impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> Eq for World<T, W, C, B>
+impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> Eq for Multiform<T, W, C, B>
 where
 	T: Eq,
 	T::Shape: Eq,
@@ -143,7 +143,7 @@ where
 {
 }
 
-impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> PartialEq for World<T, W, C, B>
+impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> PartialEq for Multiform<T, W, C, B>
 where
 	T: PartialEq,
 	T::Shape: PartialEq,
@@ -155,7 +155,7 @@ where
 	}
 }
 
-impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> Clone for World<T, W, C, B>
+impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> Clone for Multiform<T, W, C, B>
 where
 	<T as Chunk<B>>::Shape: Clone,
 	T: Clone,
@@ -171,7 +171,7 @@ where
 const _: () = {
 	use std::fmt::*;
 
-	impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> Debug for World<T, W, C, B>
+	impl<T: Chunk<B>, const W: usize, const C: usize, const B: usize> Debug for Multiform<T, W, C, B>
 	where
 		T: Debug,
 		T::Shape: Debug,
@@ -185,26 +185,26 @@ const _: () = {
 	}
 };
 
-/// [`World`] with uniform dimensionality
-pub type Uniform<T, const D: usize> = World<T, D, D, D>;
+/// `World` with uniform dimensionality
+pub type Uniform<T, const D: usize> = Multiform<T, D, D, D>;
 
-/// [`World`] with subuniform dimensionality
-pub type Subform<T, const C: usize, const B: usize> = World<T, B, C, B>;
+/// `World` with subuniform dimensionality
+pub type Subform<T, const C: usize, const B: usize> = Multiform<T, B, C, B>;
 
 #[cfg(test)]
 mod tests {
 	use super::*;
 	use crate::Array;
-	use crate::comp;
+	use crate::ct;
 
 	#[test]
 	fn test_get_block_mut_else_default() {
-		let mut world = Uniform::<Array<bool, comp::Uniform<1, 2>, 2, 1>, 2>::default();
+		let mut world = Uniform::<Array<bool, ct::Uniform<1, 2>, 2, 1>, 2>::default();
 
-		let (chunk, block) = world.world_to_chunk_block(math::Position::from([0; 2]));
+		let (chunk, block) = world.world_to_chunk_block(math::Point::from([0; 2]));
 
 		*world.entry(chunk).or_default().block_mut(block) = true;
 
-		assert_eq!(*world.chunk(math::Position::from([0; 2])).unwrap(), Array::from_buffer([true]));
+		assert_eq!(*world.chunk(math::Point::from([0; 2])).unwrap(), Array::from_buffer([true]));
 	}
 }
