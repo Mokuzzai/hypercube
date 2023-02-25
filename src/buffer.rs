@@ -83,6 +83,9 @@ impl<T: Storage, S: Shape<B>, const B: usize> Buffer<T, S, B> {
 
 		Self { shape, buffer }
 	}
+}
+
+impl<T: ?Sized + Storage, S: Shape<B>, const B: usize> Buffer<T, S, B> {
 	pub fn iter(&self) -> impl Iterator<Item = &T::Item> {
 		self.buffer.as_ref().iter()
 	}
