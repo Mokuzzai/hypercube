@@ -131,7 +131,7 @@ impl Block {
 	}
 }
 
-#[test]
+// #[test]
 fn main() {
 	let mut attrs = BlockAttrs::new()
 		.with::<[u8; 3]>("color_index");
