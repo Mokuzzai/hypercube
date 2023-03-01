@@ -1,6 +1,5 @@
 #![warn(missing_debug_implementations)]
 
-pub mod experimental;
 pub mod buffer;
 pub mod chunk;
 pub mod positions;
@@ -8,6 +7,7 @@ pub mod shape;
 pub mod world;
 pub mod position_map;
 pub mod math;
+pub mod mesh;
 
 pub use position_map::PositionMap;
 
@@ -92,10 +92,10 @@ macro_rules! make_prelude {
 	}
 }
 
-make_prelude! { prelude_1, [A; 1], Multiform1 }
-make_prelude! { prelude_2, [A, B; 2], Multiform2 }
-make_prelude! { prelude_3, [A, B, C; 3], Multiform3 }
-make_prelude! { prelude_4, [A, B, C, D; 4], Multiform4 }
+make_prelude! { prelude1, [A; 1], Multiform1 }
+make_prelude! { prelude2, [A, B; 2], Multiform2 }
+make_prelude! { prelude3, [A, B, C; 3], Multiform3 }
+make_prelude! { prelude4, [A, B, C, D; 4], Multiform4 }
 
 
 
