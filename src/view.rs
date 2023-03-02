@@ -1,6 +1,6 @@
 use crate::lazy_unreachable;
-use crate::math::Point;
 use crate::math;
+use crate::math::Point;
 use crate::shape::Cow;
 use crate::shape::Shape;
 use crate::storage::ContiguousMemory;
@@ -17,7 +17,10 @@ pub struct View<'a, T: ?Sized, S, const B: usize> {
 impl<'a, T, S, const B: usize> View<'a, T, S, B> {
 	/// [`View`] may not behave correctly if `buffer.capacity() != shape.capacity()`
 	pub fn new(buffer: T, shape: impl Into<Cow<'a, S>>) -> Self {
-		Self { shape: shape.into(), storage: buffer }
+		Self {
+			shape: shape.into(),
+			storage: buffer,
+		}
 	}
 	// NOTE: `'a` is needed for self because `self` might own its shape
 	pub fn borrow(&'a self) -> ViewRef<'a, T, Cow<'a, S>, B> {
@@ -33,7 +36,14 @@ impl<'a, T: ?Sized + ContiguousMemory, S: Shape<B>, const B: usize> View<'a, T, 
 		self.storage.as_slice().iter()
 	}
 	pub fn block_positions(&self) -> impl Iterator<Item = (Point<i32, B>, &T::Item)> {
-		self.iter().enumerate().map(|(index, block)| (self.shape.index_to_position(index).unwrap_or_else(lazy_unreachable!()), block))
+		self.iter().enumerate().map(|(index, block)| {
+			(
+				self.shape
+					.index_to_position(index)
+					.unwrap_or_else(lazy_unreachable!()),
+				block,
+			)
+		})
 	}
 	pub fn block(&'a self, position: Point<i32, B>) -> Option<&'a T::Item> {
 		let index = self.shape.position_to_index(position)?;
@@ -62,10 +72,7 @@ where
 
 		Self::new(T::from_fn(capacity, f), shape)
 	}
-	pub fn from_shape_position(
-		shape: S,
-		mut f: impl FnMut(Point<i32, B>) -> T::Item,
-	) -> Self {
+	pub fn from_shape_position(shape: S, mut f: impl FnMut(Point<i32, B>) -> T::Item) -> Self {
 		let extents = shape.extents();
 
 		Self::from_shape_index(shape, |index| {

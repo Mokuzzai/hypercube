@@ -1,8 +1,8 @@
+use crate::math;
+use crate::math::Point;
+use crate::storage::*;
 use crate::Shape;
 use crate::WorldCoordinate;
-use crate::math::Point;
-use crate::math;
-use crate::storage::*;
 // use crate::view::View;
 use crate::view::ViewMut;
 use crate::view::ViewRef;

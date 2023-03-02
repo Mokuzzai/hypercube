@@ -5,7 +5,8 @@ use std::ops::Deref;
 pub use imp::*;
 
 pub type UniformWorldCoordinate<const D: usize> = WorldCoordinate<D, D>;
-pub type WorldCoordinate<const C: usize, const B: usize> = (math::Point<i32, C>, math::Point<i32, B>);
+pub type WorldCoordinate<const C: usize, const B: usize> =
+	(math::Point<i32, C>, math::Point<i32, B>);
 
 use crate::math;
 use crate::Positions;
@@ -36,12 +37,21 @@ pub trait Shape<const B: usize>: Sized {
 		let (chunk, block) = math::world_to_chunk_block(
 			self.extents()
 				.resize_generic(math::Const::<W>, math::Const::<1>, 0),
-			world.coords.resize_generic(math::Const::<W>, math::Const::<1>, 0).into(),
+			world
+				.coords
+				.resize_generic(math::Const::<W>, math::Const::<1>, 0)
+				.into(),
 		);
 
 		(
-			chunk.coords.resize_generic(math::Const::<C>, math::Const::<1>, 0).into(),
-			block.coords.resize_generic(math::Const::<B>, math::Const::<1>, 0).into(),
+			chunk
+				.coords
+				.resize_generic(math::Const::<C>, math::Const::<1>, 0)
+				.into(),
+			block
+				.coords
+				.resize_generic(math::Const::<B>, math::Const::<1>, 0)
+				.into(),
 		)
 	}
 	fn chunk_block_to_world<const W: usize, const C: usize>(
@@ -56,8 +66,14 @@ pub trait Shape<const B: usize>: Sized {
 		math::chunk_block_to_world(
 			self.extents()
 				.resize_generic(math::Const::<W>, math::Const::<1>, 0),
-			chunk.coords.resize_generic(math::Const::<W>, math::Const::<1>, 0).into(),
-			block.coords.resize_generic(math::Const::<W>, math::Const::<1>, 0).into(),
+			chunk
+				.coords
+				.resize_generic(math::Const::<W>, math::Const::<1>, 0)
+				.into(),
+			block
+				.coords
+				.resize_generic(math::Const::<W>, math::Const::<1>, 0)
+				.into(),
 		)
 	}
 }

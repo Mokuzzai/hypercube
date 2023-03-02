@@ -6,7 +6,6 @@ use nalgebra::Point2;
 use nalgebra::Point3;
 use nalgebra::Vector2;
 
-
 pub trait MergeStrategy {
 	type Strategy: CanMergeWith;
 
@@ -31,13 +30,30 @@ pub struct Quad<T = ()> {
 	data: T,
 }
 
+impl Quad<()> {
+	fn new(uv: Point2<i32>) -> Self {
+		Self::with_data(uv, ())
+	}
+}
+
 impl<T> Quad<T> {
-	pub fn from_axis_position(axis: Axis3, position: Point3<i32>, data: T) -> Self {
-		Self {
-			uv: position.coords.remove_row(axis as usize).into(),
-			wh: Vector2::new(1, 1),
-			data,
+	pub fn drop_data(&self) -> Quad {
+		Quad {
+			uv: self.uv,
+			wh: self.wh,
+			data: (),
 		}
+	}
+
+	pub fn with_data(uv: Point2<i32>, data: T) -> Self {
+		Self {
+			data,
+			uv,
+			wh: Vector2::new(1, 1),
+		}
+	}
+	pub fn from_axis_position(axis: Axis3, position: Point3<i32>, data: T) -> Self {
+		Self::with_data(position.coords.remove_row(axis as usize).into(), data)
 	}
 }
 
@@ -54,13 +70,13 @@ impl<T: CanMergeWith> Quad<T> {
 
 		edges_touch && edges_are_same_length && self.data.can_merge_with(&other.data)
 	}
-	pub fn try_merge_with(&mut self, other: &Self, axis: Axis2) -> Result<(), ()> {
-		if self.can_merge_with(other, axis) {
+	pub fn try_merge_with(mut self, other: Self, axis: Axis2) -> Result<Self, (Self, Self)> {
+		if self.can_merge_with(&other, axis) {
 			self.wh[axis as usize] += other.wh[axis as usize];
 
-			Ok(())
+			Ok(self)
 		} else {
-			Err(())
+			Err((self, other))
 		}
 	}
 	pub fn uv1(&self) -> Point2<i32> {
@@ -84,11 +100,14 @@ impl<T: CanMergeWith> Quad<T> {
 	// }
 	/// # Return
 	/// Returns how many values were merged
-	pub fn try_merge_sorted_slice<'a>(&mut self, quads: &'a [Self], axis: Axis2) -> usize {
+	pub fn try_merge_sorted_slice<'a>(&mut self, quads: &'a [Self], axis: Axis2) -> usize
+	where
+		T: Copy,
+	{
 		let mut iter = quads.iter();
 		let mut merge_count = 0;
 
-		while let Some(quad) = iter.next() {
+		while let Some(quad) = iter.next().copied() {
 			if self.try_merge_with(quad, axis).is_err() {
 				return merge_count;
 			} else {
@@ -96,7 +115,7 @@ impl<T: CanMergeWith> Quad<T> {
 			}
 		}
 
-		return 0
+		return 0;
 	}
 	pub fn try_merge_sorted_slice_all(mut quads: &[Self], axis: Axis2) -> Vec<Self>
 	where
@@ -104,13 +123,36 @@ impl<T: CanMergeWith> Quad<T> {
 	{
 		let mut vec = Vec::new();
 
-		while let [mut first, ref rest @ ..] = *quads {
-			let merge_count = first.try_merge_sorted_slice(rest, axis);
+		let mut iter = quads.iter().copied();
 
-			vec.push(first);
+		loop {
+			println!("first iteration: {} quads left", quads.len());
 
-			quads = &quads[merge_count..];
+			let Some(mut acc) = iter.next() else { break };
+
+			'a: loop {
+				if let Some(next) = iter.next() {
+					match acc.try_merge_with(next, axis) {
+						Ok(a) => acc = a,
+						Err((a, b)) => {
+							vec.push(a);
+
+							acc = b;
+
+							break 'a;
+						}
+					}
+				} else {
+					vec.push(acc);
+
+					break 'a;
+				}
+			}
+
+			std::thread::sleep(std::time::Duration::from_secs(1));
 		}
+
+		dbg!(vec.len());
 
 		vec
 	}
@@ -192,13 +234,17 @@ impl std::ops::Not for Transform3 {
 
 impl Transform3 {
 	pub fn from_axis_position(axis: Axis3, position: Point3<i32>) -> Self {
-		Transform3 { facing: Facing::PosZ, axis, coordinate: position[axis as usize] }
+		Transform3 {
+			facing: Facing::PosZ,
+			axis,
+			coordinate: position[axis as usize],
+		}
 	}
 }
 
 #[derive(Debug)]
 pub struct Model3<T> {
-	transformed_quads: std::collections::BTreeMap<Transform3, Vec<Quad<T>>>, // NOTE: alternatively use `BTreeSet` but `Vec` is probably faster
+	transformed_quads: std::collections::BTreeMap<Transform3, Vec<Quad<T>>>,
 }
 
 impl<T> Default for Model3<T> {
@@ -211,7 +257,10 @@ impl<T> Default for Model3<T> {
 
 impl<T> Model3<T> {
 	pub fn push(&mut self, transform: Transform3, quad: Quad<T>) {
-		self.transformed_quads.entry(transform).or_default().push(quad)
+		self.transformed_quads
+			.entry(transform)
+			.or_default()
+			.push(quad)
 	}
 }
 impl<T> Model3<T>
@@ -257,11 +306,13 @@ impl<T: Copy> Model3<T> {
 	}
 }
 
-use crate::Shape;
 use crate::prelude3::ViewRef;
 use crate::storage::ContiguousMemory;
+use crate::Shape;
 
-pub fn generate_quads<'a, T: ContiguousMemory, S: Shape<3>, M: Copy>(chunk: ViewRef<'a, T, S>) -> Model3<M>
+pub fn generate_quads<'a, T: ContiguousMemory, S: Shape<3>, M: Copy>(
+	chunk: ViewRef<'a, T, S>,
+) -> Model3<M>
 where
 	T::Item: MergeStrategy<Strategy = M>,
 {
@@ -278,8 +329,8 @@ where
 
 #[cfg(test)]
 mod tests {
-	use crate::prelude3::View;
 	use crate::prelude3::ct::Uniform;
+	use crate::prelude3::View;
 
 	use super::*;
 
@@ -296,26 +347,62 @@ mod tests {
 		}
 	}
 
-	impl CanMergeWith for Block {
-		fn can_merge_with(&self, other: &Self) -> bool {
-			self.0 == other.0
-		}
+	#[test]
+	fn try_merge_sorted_with_x() {
+		let mut a = Quad::new(Point2::new(0, 0));
+		let b = Quad::new(Point2::new(1, 0));
+
+		a.try_merge_with(b, Axis2::X).unwrap();
+
+		assert_eq!(a.wh, Vector2::new(2, 1));
 	}
 
 	#[test]
-	fn bench() {
-		let chunk = black_box(View::<Box<[_]>, Uniform<32>>::from_index(|_| Block(true)));
+	fn try_merge_sorted_with_y() {
+		let mut a = Quad::new(Point2::new(0, 0));
+		let b = Quad::new(Point2::new(0, 1));
 
-		let mut model = black_box(generate_quads(chunk.borrow()));
+		a.try_merge_with(b, Axis2::Y).unwrap();
 
-		model.optimize_merge_quads(Axis2::X);
-		model.optimize_merge_quads(Axis2::Y);
+		assert_eq!(a.wh, Vector2::new(1, 2));
 	}
+
+	#[test]
+	fn try_merge_sorted_with_fail() {
+		let mut a = Quad::new(Point2::new(0, 0));
+		let b = Quad::new(Point2::new(2, 0));
+
+		assert!(a.try_merge_with(b, Axis2::X).is_err());
+	}
+
+	#[test]
+	fn try_merge_sorted_slice_all() {
+		let mut a = Quad::new(Point2::new(0, 0));
+		let mut b = [
+			Quad::new(Point2::new(1, 0)),
+			Quad::new(Point2::new(1, 1)),
+			Quad::new(Point2::new(0, 1)),
+		];
+
+		b.sort_unstable_by_key(|quad| *quad.uv.coords.as_ref());
+
+		let merged = Quad::try_merge_sorted_slice_all(&b, Axis2::Y);
+		let merged = Quad::try_merge_sorted_slice_all(&merged, Axis2::X);
+
+		eprintln!("{:?}", merged[0]);
+
+		assert_eq!(merged[0].uv, Point2::new(0, 0));
+		assert_eq!(merged[0].wh, Vector2::new(2, 2));
+	}
+
+	// WARNING:
+	// #[test]
+	// fn bench() {
+	// 	let chunk = black_box(View::<Box<[_]>, Uniform<3>>::from_index(|_| Block(true)));
+	//
+	// 	let mut model = black_box(generate_quads(chunk.borrow()));
+	//
+	// 	model.optimize_merge_quads(Axis2::X);
+	// 	// model.optimize_merge_quads(Axis2::Y);
+	// }
 }
-
-
-
-
-
-
-

@@ -28,8 +28,8 @@ pub use positions::OffsetPositions;
 pub use positions::Positions;
 
 pub use view::View;
-pub use view::ViewRef;
 pub use view::ViewMut;
+pub use view::ViewRef;
 
 macro_rules! lazy_unreachable {
 	($($t:tt)*) => {{ || unreachable!($($t)*)} }
