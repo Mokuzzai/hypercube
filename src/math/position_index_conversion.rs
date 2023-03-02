@@ -74,7 +74,10 @@ mod tests {
 				for z in 0..Z {
 					for y in 0..Y {
 						for x in 0..X {
-							f(it.next().unwrap(), Vector::from([x, y, z, w, v]).cast().into())
+							f(
+								it.next().unwrap(),
+								Vector::from([x, y, z, w, v]).cast().into(),
+							)
 						}
 					}
 				}

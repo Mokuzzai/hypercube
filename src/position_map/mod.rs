@@ -1,12 +1,11 @@
-
 mod ordered_point;
 
 pub mod entry;
 
-pub use ordered_point::OrderedPoint;
 pub use entry::Entry;
 pub use entry::OccupiedEntry;
 pub use entry::VacantEntry;
+pub use ordered_point::OrderedPoint;
 
 use crate::math::Point;
 
@@ -63,18 +62,13 @@ impl<T, const D: usize> PositionMap<T, D> {
 	}
 }
 
-
 impl<T, const D: usize> Default for PositionMap<T, D> {
 	fn default() -> Self {
 		Self::new()
 	}
 }
 
-impl<T, const D: usize> Eq for PositionMap<T, D>
-where
-	T: Eq,
-{
-}
+impl<T, const D: usize> Eq for PositionMap<T, D> where T: Eq {}
 
 impl<T, const D: usize> PartialEq for PositionMap<T, D>
 where

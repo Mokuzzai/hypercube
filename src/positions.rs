@@ -1,5 +1,5 @@
-use crate::rt::Multiform;
 use crate::math;
+use crate::rt::Multiform;
 use crate::Shape;
 
 use std::ops::Range;

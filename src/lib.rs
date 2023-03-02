@@ -1,19 +1,19 @@
 #![warn(missing_debug_implementations)]
 
-pub mod buffer;
-pub mod chunk;
-pub mod positions;
-pub mod shape;
-pub mod world;
-pub mod position_map;
 pub mod math;
 pub mod mesh;
+pub mod position_map;
+pub mod positions;
+pub mod shape;
+pub mod storage;
+pub mod view;
+pub mod world;
 
 pub use position_map::PositionMap;
 
 pub use world::Multiform;
-pub use world::Uniform;
 pub use world::Subform;
+pub use world::Uniform;
 
 pub use shape::ct;
 pub use shape::rt;
@@ -24,39 +24,17 @@ pub use shape::UniformShape;
 pub use shape::Cow;
 pub use shape::WorldCoordinate;
 
-pub use chunk::Chunk;
-pub use chunk::WithPayload;
-
 pub use positions::OffsetPositions;
 pub use positions::Positions;
 
-pub use buffer::Buffer;
-
-/// Stack allocated [`Chunk`] with static capacity
-pub type Array<T, S, const B: usize, const N: usize> = Buffer<[T; N], S, B>;
-
-/// Heap allocated [`Chunk`] with runtime determined capacity
-pub type Boxed<T, S, const B: usize> = Buffer<Box<[T]>, S, B>;
-
-pub type Slice<T, S, const B: usize> = Buffer<[T], S, B>;
-
-// make sure that `Array` coerces to `slice`
-#[allow(unused)]
-fn test_trait_bounds<T, S, const B: usize, const N: usize>(
-	array: &Array<T, S, B, N>,
-) -> &Slice<T, S, B> {
-	array
-}
-
-macro_rules! lazy_panic {
-	($($t:tt)*) => {{ || panic!($($t)*)} }
-}
+pub use view::View;
+pub use view::ViewRef;
+pub use view::ViewMut;
 
 macro_rules! lazy_unreachable {
 	($($t:tt)*) => {{ || unreachable!($($t)*)} }
 }
 
-pub(crate) use lazy_panic;
 pub(crate) use lazy_unreachable;
 
 macro_rules! make_prelude {
@@ -71,23 +49,17 @@ macro_rules! make_prelude {
 				pub type Multiform = $crate::shape::rt::Multiform<$D>;
 			}
 
+			pub type View<'a, T, S> = $crate::View<'a, T, S, $D>;
+			pub type ViewRef<'a, T, S> = $crate::ViewRef<'a, T, S, $D>;
+			pub type ViewMut<'a, T, S> = $crate::ViewMut<'a, T, S, $D>;
+
 			// pub trait Shape = $crate::Shape<$D>;
 			// pub trait UniformShape = $crate::UniformShape<$D>;
-			// pub trait Chunk = $crate::Chunk<$D>;
 
 			pub use $crate::Shape;
 			pub use $crate::UniformShape;
-			pub use $crate::Chunk;
 
-			pub type World<T> = $crate::world::Uniform<T, $D>;
-
-			/// Stack allocated [`Chunk`] with static capacity
-			pub type Array<T, S, const N: usize> = $crate::Array<T, S, $D, N>;
-
-			/// Heap allocated [`Chunk`] with runtime determined capacity
-			pub type Boxed<T, S> = $crate::Boxed<T, S, $D>;
-
-			pub type Slice<T, S> = $crate::Slice<T, S, $D>;
+			pub type World<T, S> = $crate::world::Uniform<T, S, $D>;
 		}
 	}
 }
@@ -96,7 +68,3 @@ make_prelude! { prelude1, [A; 1], Multiform1 }
 make_prelude! { prelude2, [A, B; 2], Multiform2 }
 make_prelude! { prelude3, [A, B, C; 3], Multiform3 }
 make_prelude! { prelude4, [A, B, C, D; 4], Multiform4 }
-
-
-
-

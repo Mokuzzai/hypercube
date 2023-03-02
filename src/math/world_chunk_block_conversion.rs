@@ -6,17 +6,29 @@ fn from_end_relative<const B: usize>(
 ) -> Point<i32, B> {
 	let extents = extents.cast();
 
-	(position + extents).coords.zip_map(&extents, std::ops::Rem::rem).into()
+	(position + extents)
+		.coords
+		.zip_map(&extents, std::ops::Rem::rem)
+		.into()
 }
 
-pub fn world_to_chunk<const D: usize>(extents: Vector<usize, D>, world: Point<i32, D>) -> Point<i32, D> {
+pub fn world_to_chunk<const D: usize>(
+	extents: Vector<usize, D>,
+	world: Point<i32, D>,
+) -> Point<i32, D> {
 	world_to_chunk_block(extents, world).0
 }
 
-pub fn world_to_block<const D: usize>(extents: Vector<usize, D>, world: Point<i32, D>) -> Point<i32, D> {
+pub fn world_to_block<const D: usize>(
+	extents: Vector<usize, D>,
+	world: Point<i32, D>,
+) -> Point<i32, D> {
 	let extents_i32: Vector<i32, D> = extents.cast();
 
-	let block = world.coords.zip_map(&extents_i32, std::ops::Rem::rem).into();
+	let block = world
+		.coords
+		.zip_map(&extents_i32, std::ops::Rem::rem)
+		.into();
 
 	// this position might be end-relative and if it is it should be converted
 	let block = from_end_relative(extents, block);
@@ -24,7 +36,10 @@ pub fn world_to_block<const D: usize>(extents: Vector<usize, D>, world: Point<i3
 	block
 }
 
-pub fn chunk_to_world<const D: usize>(extents: Vector<usize, D>, chunk: Point<i32, D>) -> Point<i32, D> {
+pub fn chunk_to_world<const D: usize>(
+	extents: Vector<usize, D>,
+	chunk: Point<i32, D>,
+) -> Point<i32, D> {
 	let extents = extents.cast();
 
 	chunk.coords.component_mul(&extents).into()
@@ -120,10 +135,7 @@ mod test {
 		for (chunk_block, world) in debug_coordinates() {
 			eprintln!("{:?} {:?}", chunk_block, world);
 
-			assert_eq!(
-				world_to_chunk(Vector::from([2, 2]), world),
-				chunk_block.0
-			);
+			assert_eq!(world_to_chunk(Vector::from([2, 2]), world), chunk_block.0);
 		}
 	}
 
@@ -132,10 +144,7 @@ mod test {
 		for (chunk_block, world) in debug_coordinates() {
 			eprintln!("{:?} {:?}", chunk_block, world);
 
-			assert_eq!(
-				world_to_block(Vector::from([2, 2]), world),
-				chunk_block.1
-			);
+			assert_eq!(world_to_block(Vector::from([2, 2]), world), chunk_block.1);
 		}
 	}
 

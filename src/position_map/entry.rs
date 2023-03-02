@@ -119,10 +119,7 @@ impl<'a, T, const C: usize> Entry<'a, T, C> {
 			Self::Vacant(entry) => entry.insert(default()),
 		}
 	}
-	pub fn or_insert_with_key<F: FnOnce(math::Point<i32, C>) -> T>(
-		self,
-		default: F,
-	) -> &'a mut T {
+	pub fn or_insert_with_key<F: FnOnce(math::Point<i32, C>) -> T>(self, default: F) -> &'a mut T {
 		match self {
 			Self::Occupied(entry) => entry.into_mut_value(),
 			Self::Vacant(entry) => {

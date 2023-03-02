@@ -66,10 +66,24 @@ pub trait UniformShape<const B: usize>: Shape<B> {
 	fn stride(&self) -> usize;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum Cow<'a, T> {
 	Owned(T),
 	Borrowed(&'a T),
+}
+
+impl<'a, T> Cow<'a, T> {}
+
+impl<'a, T> From<T> for Cow<'a, T> {
+	fn from(t: T) -> Self {
+		Self::Owned(t)
+	}
+}
+
+impl<'a, T> From<&'a T> for Cow<'a, T> {
+	fn from(t: &'a T) -> Self {
+		Self::Borrowed(t)
+	}
 }
 
 impl<'a, T> Deref for Cow<'a, T> {
