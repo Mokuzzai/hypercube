@@ -1,7 +1,6 @@
 use crate::lazy_unreachable;
 use crate::math;
 use crate::math::Point;
-use crate::shape::Cow;
 use crate::shape::Shape;
 use crate::storage::ContiguousMemory;
 use crate::storage::ContiguousMemoryMut;
@@ -9,29 +8,38 @@ use crate::storage::FromFn;
 use crate::storage::Storage;
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct View<'a, T: ?Sized, S, const B: usize> {
-	shape: Cow<'a, S>,
+pub struct View<T: ?Sized, S, const B: usize> {
+	shape: S,
 	storage: T,
 }
 
-impl<'a, T, S, const B: usize> View<'a, T, S, B> {
+impl<T, S, const B: usize> View<T, S, B> {
 	/// [`View`] may not behave correctly if `buffer.capacity() != shape.capacity()`
-	pub fn new(buffer: T, shape: impl Into<Cow<'a, S>>) -> Self {
+	pub fn new(buffer: T, shape: S) -> Self {
 		Self {
-			shape: shape.into(),
+			shape,
 			storage: buffer,
 		}
 	}
+	pub fn storage(&self) -> &T {
+		&mut self.storage()
+	}
+	pub fn storage_mut(&mut self) -> &mut T {
+		&mut self.storage()
+	}
+	pub fn shape(&self) -> &S {
+		&self.shape
+	}
 	// NOTE: `'a` is needed for self because `self` might own its shape
-	pub fn borrow(&'a self) -> ViewRef<'a, T, Cow<'a, S>, B> {
+	pub fn borrow(&self) -> ViewRef<T, &S, B> {
 		ViewRef::new(&self.storage, &self.shape)
 	}
-	pub fn borrow_mut(&'a mut self) -> ViewMut<'a, T, Cow<'a, S>, B> {
+	pub fn borrow_mut(&mut self) -> ViewMut<T, &S, B> {
 		ViewMut::new(&mut self.storage, &self.shape)
 	}
 }
 
-impl<'a, T: ?Sized + ContiguousMemory, S: Shape<B>, const B: usize> View<'a, T, S, B> {
+impl<T: ?Sized + ContiguousMemory, S: Shape<B>, const B: usize> View<T, S, B> {
 	pub fn iter(&self) -> impl Iterator<Item = &T::Item> {
 		self.storage.as_slice().iter()
 	}
@@ -45,25 +53,25 @@ impl<'a, T: ?Sized + ContiguousMemory, S: Shape<B>, const B: usize> View<'a, T, 
 			)
 		})
 	}
-	pub fn block(&'a self, position: Point<i32, B>) -> Option<&'a T::Item> {
+	pub fn block(&self, position: Point<i32, B>) -> Option<&T::Item> {
 		let index = self.shape.position_to_index(position)?;
 
 		self.storage.as_slice().get(index)
 	}
 }
 
-impl<'a, T: ?Sized + ContiguousMemoryMut, S: Shape<B>, const B: usize> View<'a, T, S, B> {
+impl<T: ?Sized + ContiguousMemoryMut, S: Shape<B>, const B: usize> View<T, S, B> {
 	pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T::Item> {
 		self.storage.as_mut_slice().iter_mut()
 	}
-	pub fn block_mut(&'a mut self, position: Point<i32, B>) -> Option<&'a mut T::Item> {
+	pub fn block_mut(&mut self, position: Point<i32, B>) -> Option<&mut T::Item> {
 		let index = self.shape.position_to_index(position)?;
 
 		self.storage.as_mut_slice().get_mut(index)
 	}
 }
 
-impl<'a, T: ContiguousMemory, S: Shape<B>, const B: usize> View<'a, T, S, B>
+impl<T: ContiguousMemory, S: Shape<B>, const B: usize> View<T, S, B>
 where
 	T: FromFn,
 {
@@ -87,7 +95,7 @@ where
 	}
 }
 
-impl<'a, T: Storage, S: Shape<B>, const B: usize> View<'a, T, S, B>
+impl<T: Storage, S: Shape<B>, const B: usize> View<T, S, B>
 where
 	T: FromFn,
 	S: Default,
@@ -103,7 +111,7 @@ where
 	}
 }
 
-impl<'a, T: Storage, S: Shape<B>, const B: usize> Default for View<'a, T, S, B>
+impl<T: Storage, S: Shape<B>, const B: usize> Default for View<T, S, B>
 where
 	T: FromFn,
 	T::Item: Default,
@@ -114,5 +122,5 @@ where
 	}
 }
 
-pub type ViewRef<'a, T, S, const B: usize> = View<'a, &'a T, S, B>;
-pub type ViewMut<'a, T, S, const B: usize> = View<'a, &'a mut T, S, B>;
+pub type ViewRef<'a, T, S, const B: usize> = View<&'a T, S, B>;
+pub type ViewMut<'a, T, S, const B: usize> = View<&'a mut T, S, B>;

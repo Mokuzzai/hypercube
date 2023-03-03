@@ -51,7 +51,7 @@ macro_rules! make_prelude {
 
 			pub type PositionMap<T> = $crate::PositionMap<T, $D>;
 
-			pub type View<'a, T, S> = $crate::View<'a, T, S, $D>;
+			pub type View<T, S> = $crate::View<T, S, $D>;
 			pub type ViewRef<'a, T, S> = $crate::ViewRef<'a, T, S, $D>;
 			pub type ViewMut<'a, T, S> = $crate::ViewMut<'a, T, S, $D>;
 
