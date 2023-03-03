@@ -223,6 +223,10 @@ pub trait FacelessPlane: Ord {
 		self
 	}
 
+	fn with_facing(self, facing: Facing) -> FacedTransform<Self> where Self: Sized {
+		FacedTransform::new(self, facing)
+	}
+
 	fn with_default_facing(self) -> FacedTransform<Self> where Self: Sized {
 		FacedTransform::new(self, Facing::default())
 	}
@@ -236,30 +240,46 @@ pub struct FacedTransform<T> {
 }
 
 impl<T> FacedTransform<T> {
-	fn new(transform: T, facing: Facing) -> Self {
+	pub fn new(transform: T, facing: Facing) -> Self {
 		Self { transform, facing }
 	}
-	fn flip(&mut self) {
+	pub fn transform(&self) -> &T {
+		&self.transform
+	}
+	pub fn transform_mut(&mut self) -> &mut T {
+		&mut self.transform
+	}
+	pub fn facing(&self) -> &Facing {
+		&self.facing
+	}
+	pub fn facing_mut(&mut self) -> &mut Facing {
+		&mut self.facing
+	}
+	pub fn flip(&mut self) {
 		self.facing = !self.facing
 	}
-	fn flipped(mut self) -> Self {
+	pub fn flipped(mut self) -> Self {
 		self.flip();
 		self
 	}
 }
 
 impl<T: FacelessPlane> FacedTransform<T> {
-	fn offset(&mut self, offset: i32) {
+	pub fn offset(&mut self, offset: i32) {
 		self.transform.offset(offset)
 	}
 
-	fn with_offset(mut self, offset: i32) -> Self {
+	pub fn with_offset(mut self, offset: i32) -> Self {
 		self.offset(offset);
 		self
 	}
 
-	fn normal(&self) -> Vector3<i32> {
+	pub fn normal(&self) -> Vector3<i32> {
 		self.transform.normal() * (self.facing as i32 * 2 - 1)
+	}
+
+	pub fn transform_point(&self, uv: Point2<i32>) -> Point3<i32> {
+		self.transform.transform_point(uv)
 	}
 }
 
@@ -306,9 +326,12 @@ impl<T, U> Model3<T, U> {
 			&mut self.neg_z
 		}
 	}
-	pub fn iter(&self) -> impl Iterator<Item = (&T, &[Quad<U>])> {
-		self.pos_z.iter().map(|(t, v)| (t, &**v))
-			.chain(self.neg_z.iter().map(|(t, v)| (t, &**v)))
+}
+
+impl<T: Copy, U> Model3<T, U> {
+	pub fn iter(&self) -> impl Iterator<Item = (FacedTransform<T>, &[Quad<U>])> {
+		self.pos_z.iter().map(|(&t, v)| (FacedTransform::new(t, Facing::PosZ), &**v))
+			.chain(self.neg_z.iter().map(|(&t, v)| (FacedTransform::new(t, Facing::NegZ), &**v)))
 	}
 }
 
