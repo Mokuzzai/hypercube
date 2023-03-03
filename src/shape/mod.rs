@@ -82,6 +82,30 @@ pub trait UniformShape<const B: usize>: Shape<B> {
 	fn stride(&self) -> usize;
 }
 
+impl<'a, T: Shape<B>, const B: usize> Shape<B> for &'a T {
+	fn extents(&self) -> math::Vector<usize, B> {
+		T::extents(&**self)
+	}
+
+	// NOTE: impl rest of the methods
+}
+
+impl<'a, T: Shape<B>, const B: usize> Shape<B> for &'a mut T {
+	fn extents(&self) -> math::Vector<usize, B> {
+		T::extents(&**self)
+	}
+
+	// NOTE: impl rest of the methods
+}
+
+impl<T: Shape<B>, const B: usize> Shape<B> for Box<T> {
+	fn extents(&self) -> math::Vector<usize, B> {
+		T::extents(&**self)
+	}
+
+	// NOTE: impl rest of the methods
+}
+
 #[derive(Debug, Eq, PartialEq)]
 pub enum Cow<'a, T> {
 	Owned(T),
