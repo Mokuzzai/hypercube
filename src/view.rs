@@ -21,6 +21,13 @@ impl<T, S, const B: usize> View<T, S, B> {
 			storage: buffer,
 		}
 	}
+	pub fn into_inner(self) -> (S, T) {
+		(self.shape, self.storage)
+	}
+}
+
+impl<T: ?Sized, S, const B: usize> View<T, S, B> {
+
 	pub fn storage(&self) -> &T {
 		&self.storage
 	}
@@ -30,6 +37,7 @@ impl<T, S, const B: usize> View<T, S, B> {
 	pub fn shape(&self) -> &S {
 		&self.shape
 	}
+
 	pub fn borrow(&self) -> ViewRef<T, &S, B> {
 		ViewRef::new(&self.storage, &self.shape)
 	}
