@@ -93,6 +93,9 @@ impl<T: Eq> Quad<T> {
 
 		x.contains(&point.x) && y.contains(&point.y)
 	}
+	pub fn contains_quad<U>(&self, other: &Quad<U>) -> bool {
+		self.contains_point(other.position) && self.contains_point(other.uv1())
+	}
 	// pub fn try_occluded_by(&self, other: &Self) -> Result<bool, ()> {
 	// 	if self.facing != other.facing {
 	// 		Err(())
@@ -328,13 +331,6 @@ impl<T, U> Model3<T, U> {
 	}
 }
 
-impl<T: Copy, U> Model3<T, U> {
-	pub fn iter(&self) -> impl Iterator<Item = (FacedTransform<T>, &[Quad<U>])> {
-		self.pos_z.iter().map(|(&t, v)| (FacedTransform::new(t, Facing::PosZ), &**v))
-			.chain(self.neg_z.iter().map(|(&t, v)| (FacedTransform::new(t, Facing::NegZ), &**v)))
-	}
-}
-
 impl<T, U> Default for Model3<T, U> {
 	fn default() -> Self {
 		Self {
@@ -343,6 +339,42 @@ impl<T, U> Default for Model3<T, U> {
 		}
 	}
 }
+
+impl<T: FacelessPlane, U: Eq> Model3<T, U> {
+	pub fn optimize_cull_touching_faces(&mut self) {
+		for (transform, pos_quads) in self.pos_z.iter_mut() {
+			let Some(neg_quads) = self.neg_z.get_mut(transform) else { continue; };
+
+			let mut pos = 0;
+
+			while pos < pos_quads.len() {
+				let mut neg = 0;
+
+				while neg < neg_quads.len() {
+					if pos_quads[pos].contains_quad(&neg_quads[neg]) {
+						neg_quads.remove(neg);
+					} else {
+						neg += 1;
+					}
+
+					if neg_quads[neg].contains_quad(&pos_quads[pos]) {
+						pos_quads.remove(pos);
+					} else {
+						pos += 1;
+					}
+				}
+			}
+		}
+	}
+}
+
+impl<T: Copy, U> Model3<T, U> {
+	pub fn iter(&self) -> impl Iterator<Item = (FacedTransform<T>, &[Quad<U>])> {
+		self.pos_z.iter().map(|(&t, v)| (FacedTransform::new(t, Facing::PosZ), &**v))
+			.chain(self.neg_z.iter().map(|(&t, v)| (FacedTransform::new(t, Facing::NegZ), &**v)))
+	}
+}
+
 
 impl<T: Ord, U> Model3<T, U> {
 	pub fn push(&mut self, transform: FacedTransform<T>, quad: Quad<U>) {
@@ -370,6 +402,7 @@ impl<T: FacelessPlane + Copy, U: Copy> Model3<T, U> {
 		self.push(z.flipped(), Quad::from_axis_position(Axis3::Z, position, data));
 	}
 }
+
 
 use crate::prelude3::ViewRef;
 use crate::storage::ContiguousMemory;
