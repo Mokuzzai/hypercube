@@ -7,22 +7,6 @@ use nalgebra::Point3;
 use nalgebra::Vector2;
 use nalgebra::Vector3;
 
-pub trait MergeStrategy {
-	type Strategy: CanMergeWith;
-
-	fn get_merge_strategy(&self) -> Option<Self::Strategy>;
-}
-
-pub trait CanMergeWith {
-	fn can_merge_with(&self, other: &Self) -> bool;
-}
-
-impl CanMergeWith for () {
-	fn can_merge_with(&self, other: &Self) -> bool {
-		true
-	}
-}
-
 #[derive(Debug, Copy, Clone)]
 pub struct Quad<T = ()> {
 	pub position: Point2<i32>,
@@ -76,7 +60,7 @@ impl<T> Quad<T> {
 	}
 }
 
-impl<T: CanMergeWith> Quad<T> {
+impl<T: Eq> Quad<T> {
 	pub fn can_merge_with(&self, other: &Self, axis: Axis2) -> bool {
 		let r0 = self.uv1()[axis as usize];
 		let r1 = other.position[axis as usize];
@@ -87,7 +71,7 @@ impl<T: CanMergeWith> Quad<T> {
 		let edges_touch = r0 == r1;
 		let edges_are_same_length = ah == bh;
 
-		edges_touch && edges_are_same_length && self.data.can_merge_with(&other.data)
+		edges_touch && edges_are_same_length && self.data == other.data
 	}
 	pub fn try_merge_with(mut self, other: Self, axis: Axis2) -> Result<Self, (Self, Self)> {
 		if self.can_merge_with(&other, axis) {
@@ -288,7 +272,7 @@ impl AaTransform3 {
 }
 
 #[derive(Debug)]
-pub struct Model3<T, U> {
+pub struct Model3<T, U = ()> {
 	transformed_quads: std::collections::BTreeMap<T, Vec<Quad<U>>>,
 }
 
@@ -317,7 +301,7 @@ impl<T, U> Model3<T, U> {
 
 impl<T, U> Model3<T, U>
 where
-	U: Copy + CanMergeWith,
+	U: Copy + Eq,
 {
 	pub fn optimize_merge_quads(&mut self, axis: Axis2) {
 		for quads in self.transformed_quads.values_mut() {
@@ -362,24 +346,6 @@ use crate::prelude3::ViewRef;
 use crate::storage::ContiguousMemory;
 use crate::Shape;
 
-pub fn generate_quads<'a, M: ContiguousMemory, S: Shape<3>, T, U: Copy>(
-	chunk: ViewRef<'a, M, S>,
-) -> Model3<T, U>
-where
-	T: Plane + Copy,
-	M::Item: MergeStrategy<Strategy = U>,
-{
-	let mut model = Model3::default();
-
-	for (position, block) in chunk.block_positions() {
-		let Some(merge_strategy) = block.get_merge_strategy() else { continue };
-
-		model.push_cube(position, merge_strategy)
-	}
-
-	model
-}
-
 #[cfg(test)]
 mod tests {
 	use crate::prelude3::ct::Uniform;
@@ -391,14 +357,6 @@ mod tests {
 
 	#[derive(Copy, Clone)]
 	struct Block(bool);
-
-	impl MergeStrategy for Block {
-		type Strategy = ();
-
-		fn get_merge_strategy(&self) -> Option<Self::Strategy> {
-			self.0.then_some(())
-		}
-	}
 
 	#[test]
 	fn quad_points() {
@@ -416,17 +374,50 @@ mod tests {
 
 	#[test]
 	fn transform_point() {
-		let position = Point3::new(3, 5, 7);
+		for z in -10..10 {
+			for y in -10..10 {
+				for x in -10..10 {
+					for axis in [Axis3::X, Axis3::Y, Axis3::Z] {
+						let position = Point3::new(x, y, z);
 
-		let axis = Axis3::X;
+						let transform = AaTransform3::from_axis_position(axis, position);
 
-		let transform = AaTransform3::from_axis_position(axis, position);
+						let quad = Quad::from_axis_position(axis, position, ());
 
-		let quad = Quad::from_axis_position(axis, position, ());
+						let new_position = transform.transform_point(quad.position);
 
-		let new_position = transform.transform_point(quad.position);
+						assert_eq!(position, new_position);
+					}
+				}
+			}
+		}
+	}
 
-		assert_eq!(position, new_position);
+	#[test]
+	fn push_cube() {
+		let mut model = Model3::<AaTransform3>::default();
+
+		model.push_cube(Point3::new(0, 0, 0), ());
+
+		let mut quad_vertices = Vec::new();
+
+		for (t, q) in model.iter() {
+			let v = q.first().unwrap().points().map(|point| t.transform_point(point)).map(|p| *p.coords.as_ref());
+
+			quad_vertices.push(v);
+		}
+
+		#[rustfmt::skip]
+		let result = [
+			[[1, 0, 0], [1, 0, 1], [1, 1, 0], [1, 1, 1]],
+			[[0, 1, 0], [0, 1, 1], [1, 1, 0], [1, 1, 1]],
+			[[0, 0, 1], [0, 1, 1], [1, 0, 1], [1, 1, 1]],
+			[[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1]],
+			[[0, 0, 0], [0, 0, 1], [1, 0, 0], [1, 0, 1]],
+			[[0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 0]],
+		];
+
+		assert_eq!(*quad_vertices, result[..]);
 	}
 
 	// #[test]
