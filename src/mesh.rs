@@ -262,6 +262,9 @@ impl<T> Model3<T> {
 			.or_default()
 			.push(quad)
 	}
+	pub fn iter(&self) -> impl Iterator<Item = (&Transform3, &[Quad<T>])> {
+		self.transformed_quads.iter().map(|(t, v)| (t, &**v))
+	}
 }
 impl<T> Model3<T>
 where
