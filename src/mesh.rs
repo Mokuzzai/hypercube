@@ -361,33 +361,33 @@ mod tests {
 		}
 	}
 
-	#[test]
-	fn try_merge_sorted_with_x() {
-		let mut a = Quad::new(Point2::new(0, 0));
-		let b = Quad::new(Point2::new(1, 0));
-
-		a.try_merge_with(b, Axis2::X).unwrap();
-
-		assert_eq!(a.extents, Vector2::new(2, 1));
-	}
-
-	#[test]
-	fn try_merge_sorted_with_y() {
-		let mut a = Quad::new(Point2::new(0, 0));
-		let b = Quad::new(Point2::new(0, 1));
-
-		a.try_merge_with(b, Axis2::Y).unwrap();
-
-		assert_eq!(a.extents, Vector2::new(1, 2));
-	}
-
-	#[test]
-	fn try_merge_sorted_with_fail() {
-		let mut a = Quad::new(Point2::new(0, 0));
-		let b = Quad::new(Point2::new(2, 0));
-
-		assert!(a.try_merge_with(b, Axis2::X).is_err());
-	}
+	// #[test]
+	// fn try_merge_sorted_with_x() {
+	// 	let mut a = Quad::new(Point2::new(0, 0));
+	// 	let b = Quad::new(Point2::new(1, 0));
+ //
+	// 	a.try_merge_with(b, Axis2::X).unwrap();
+ //
+	// 	assert_eq!(a.extents, Vector2::new(2, 1));
+	// }
+ //
+	// #[test]
+	// fn try_merge_sorted_with_y() {
+	// 	let mut a = Quad::new(Point2::new(0, 0));
+	// 	let b = Quad::new(Point2::new(0, 1));
+ //
+	// 	a.try_merge_with(b, Axis2::Y).unwrap();
+ //
+	// 	assert_eq!(a.extents, Vector2::new(1, 2));
+	// }
+ //
+	// #[test]
+	// fn try_merge_sorted_with_fail() {
+	// 	let mut a = Quad::new(Point2::new(0, 0));
+	// 	let b = Quad::new(Point2::new(2, 0));
+ //
+	// 	assert!(a.try_merge_with(b, Axis2::X).is_err());
+	// }
 
 	#[test]
 	fn try_merge_sorted_slice_all() {

@@ -7,7 +7,7 @@ use crate::storage::ContiguousMemoryMut;
 use crate::storage::FromFn;
 use crate::storage::Storage;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct View<T: ?Sized, S, const B: usize> {
 	shape: S,
 	storage: T,
