@@ -340,29 +340,31 @@ impl<T, U> Default for Model3<T, U> {
 	}
 }
 
-impl<T: FacelessPlane, U: Eq> Model3<T, U> {
+fn filter_map<T>(vec: &mut Vec<T>, mut predicate: impl FnMut(&mut T) -> bool, mut callback: impl FnMut(T)) {
+	let mut i = 0;
+	while i < vec.len() {
+		if predicate(&mut vec[i]) {
+			let val = vec.remove(i);
+
+			callback(val)
+		} else {
+			i += 1;
+		}
+	}
+}
+
+impl<T: FacelessPlane, U: Copy + Eq> Model3<T, U> {
 	pub fn optimize_cull_touching_faces(&mut self) {
 		for (transform, pos_quads) in self.pos_z.iter_mut() {
 			let Some(neg_quads) = self.neg_z.get_mut(transform) else { continue; };
 
-			let mut pos = 0;
+			let i = 0;
 
-			while pos < pos_quads.len() {
-				let mut neg = 0;
+			while i < pos_quads.len(){
+				let target = pos_quads[i];
 
-				while neg < neg_quads.len() {
-					if pos_quads[pos].contains_quad(&neg_quads[neg]) {
-						neg_quads.remove(neg);
-					} else {
-						neg += 1;
-					}
-
-					if neg_quads[neg].contains_quad(&pos_quads[pos]) {
-						pos_quads.remove(pos);
-					} else {
-						pos += 1;
-					}
-				}
+				filter_map(pos_quads, |quad| target.contains_quad(quad), drop);
+				filter_map(neg_quads, |quad| target.contains_quad(quad), drop);
 			}
 		}
 	}
