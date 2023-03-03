@@ -336,7 +336,7 @@ impl<T: Plane + Copy, U: Copy> Model3<T, U> {
 		self.push(y.offsetted(1), Quad::from_axis_position(Axis3::Y, position, data));
 		self.push(z.offsetted(1), Quad::from_axis_position(Axis3::Z, position, data));
 
-		self.push(x.flipped(), Quad::from_axis_position(Axis3::Y, position, data));
+		self.push(x.flipped(), Quad::from_axis_position(Axis3::X, position, data));
 		self.push(y.flipped(), Quad::from_axis_position(Axis3::Y, position, data));
 		self.push(z.flipped(), Quad::from_axis_position(Axis3::Z, position, data));
 	}
