@@ -210,6 +210,7 @@ pub trait FacelessPlane: Ord {
 	}
 
 	fn transform_point(&self, uv: Point2<i32>) -> Point3<i32>;
+	fn normal(&self) -> Vector3<i32>;
 
 	/// Offset this plane along its normal
 	fn offset(&mut self, offset: i32);
@@ -225,6 +226,7 @@ pub trait FacelessPlane: Ord {
 	fn with_default_facing(self) -> FacedTransform<Self> where Self: Sized {
 		FacedTransform::new(self, Facing::default())
 	}
+
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
@@ -255,6 +257,10 @@ impl<T: FacelessPlane> FacedTransform<T> {
 		self.offset(offset);
 		self
 	}
+
+	fn normal(&self) -> Vector3<i32> {
+		self.transform.normal() * (self.facing as i32 * 2 - 1)
+	}
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
@@ -268,6 +274,9 @@ pub struct AaTransform3 {
 impl FacelessPlane for AaTransform3 {
 	fn transform_point(&self, point: Point2<i32>) -> Point3<i32> {
 		point.coords.insert_row(self.axis as usize, self.offset).into()
+	}
+	fn normal(&self) -> Vector3<i32> {
+		Vector2::new(0, 0).insert_row(self.axis as usize, 1)
 	}
 	fn offset(&mut self, offset: i32) {
 		self.offset += offset
