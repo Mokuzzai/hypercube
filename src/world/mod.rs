@@ -239,10 +239,8 @@ mod tests {
 
 		let (chunk, block) = world.world_to_chunk_block(math::Point::from([0; 2]));
 
-		let index = world.shape().position_to_index(block).unwrap();
+		world.entry(chunk).or_default().replace(block, true).unwrap();
 
-		// world.entry(chunk).or_default()[index] = true;
-
-		// assert_eq!(*world.storage(math::Point::from([0; 2])).unwrap(), [true]);
+		assert_eq!(**world.chunk(math::Point::from([0; 2])).unwrap().storage(), [true]);
 	}
 }
