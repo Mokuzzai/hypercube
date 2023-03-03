@@ -7,6 +7,8 @@ use nalgebra::Point3;
 use nalgebra::Vector2;
 use nalgebra::Vector3;
 
+use std::collections::BTreeMap;
+
 #[derive(Debug, Copy, Clone)]
 pub struct Quad<T = ()> {
 	pub position: Point2<i32>,
@@ -182,8 +184,9 @@ impl std::ops::Not for Axis2 {
 	}
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Facing {
+	#[default]
 	PosZ,
 	NegZ,
 }
@@ -200,19 +203,18 @@ impl std::ops::Not for Facing {
 }
 
 /// Represents a plane in 3d space
-pub trait Plane: Ord {
-	fn from_axis_position(axis: Axis3, position: Point3<i32>) -> Self;
+pub trait FacelessPlane: Ord {
+	fn from_axis_offset(axis: Axis3, offset: i32) -> Self;
+	fn from_axis_position(axis: Axis3, position: Point3<i32>) -> Self where Self: Sized {
+		Self::from_axis_offset(axis, position[axis as usize])
+	}
 
 	fn transform_point(&self, uv: Point2<i32>) -> Point3<i32>;
-	fn normal(&self) -> Vector3<i32>;
 
 	/// Offset this plane along its normal
 	fn offset(&mut self, offset: i32);
 
-	/// Flip this planes normal
-	fn flip(&mut self);
-
-	fn offsetted(mut self, offset: i32) -> Self
+	fn with_offset(mut self, offset: i32) -> Self
 	where
 		Self: Sized,
 	{
@@ -220,11 +222,37 @@ pub trait Plane: Ord {
 		self
 	}
 
-	fn flipped(mut self) -> Self
-	where
-		Self: Sized,
-	{
+	fn with_default_facing(self) -> FacedTransform<Self> where Self: Sized {
+		FacedTransform::new(self, Facing::default())
+	}
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
+pub struct FacedTransform<T> {
+	transform: T,
+	facing: Facing,
+}
+
+impl<T> FacedTransform<T> {
+	fn new(transform: T, facing: Facing) -> Self {
+		Self { transform, facing }
+	}
+	fn flip(&mut self) {
+		self.facing = !self.facing
+	}
+	fn flipped(mut self) -> Self {
 		self.flip();
+		self
+	}
+}
+
+impl<T: FacelessPlane> FacedTransform<T> {
+	fn offset(&mut self, offset: i32) {
+		self.transform.offset(offset)
+	}
+
+	fn with_offset(mut self, offset: i32) -> Self {
+		self.offset(offset);
 		self
 	}
 }
@@ -232,109 +260,78 @@ pub trait Plane: Ord {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 /// Axis-aligned transform
 pub struct AaTransform3 {
-	facing: Facing,
-
 	axis: Axis3,
 
-	coordinate: i32,
+	offset: i32,
 }
 
-impl Plane for AaTransform3 {
+impl FacelessPlane for AaTransform3 {
 	fn transform_point(&self, point: Point2<i32>) -> Point3<i32> {
-		point.coords.insert_row(self.axis as usize, self.coordinate).into()
-	}
-	fn normal(&self) -> Vector3<i32> {
-		Vector2::new(0, 0).insert_row(self.axis as usize, self.facing as i32 * 2 - 1)
+		point.coords.insert_row(self.axis as usize, self.offset).into()
 	}
 	fn offset(&mut self, offset: i32) {
-		self.coordinate += offset
+		self.offset += offset
+	}
+	fn from_axis_offset(axis: Axis3, offset: i32) -> Self {
+		AaTransform3 {
+			axis,
+			offset,
+		}
 	}
 	fn from_axis_position(axis: Axis3, position: Point3<i32>) -> Self {
-		AaTransform3 {
-			facing: Facing::PosZ,
-			axis,
-			coordinate: position[axis as usize],
-		}
-	}
-	fn flip(&mut self) {
-		self.facing = !self.facing
-	}
-}
-
-impl AaTransform3 {
-	pub fn from_axis_position(axis: Axis3, position: Point3<i32>) -> Self {
-		AaTransform3 {
-			facing: Facing::PosZ,
-			axis,
-			coordinate: position[axis as usize],
-		}
+		Self::from_axis_offset(axis, position[axis as usize])
 	}
 }
 
 #[derive(Debug)]
 pub struct Model3<T, U = ()> {
-	transformed_quads: std::collections::BTreeMap<T, Vec<Quad<U>>>,
+	pos_z: BTreeMap<T, Vec<Quad<U>>>,
+	neg_z: BTreeMap<T, Vec<Quad<U>>>,
+}
+
+impl<T, U> Model3<T, U> {
+	pub fn faceless_mut(&mut self, facing: Facing) -> &mut BTreeMap<T, Vec<Quad<U>>> {
+		if facing == Facing::PosZ {
+			&mut self.pos_z
+		} else {
+			&mut self.neg_z
+		}
+	}
+	pub fn iter(&self) -> impl Iterator<Item = (&T, &[Quad<U>])> {
+		self.pos_z.iter().map(|(t, v)| (t, &**v))
+			.chain(self.neg_z.iter().map(|(t, v)| (t, &**v)))
+	}
 }
 
 impl<T, U> Default for Model3<T, U> {
 	fn default() -> Self {
 		Self {
-			transformed_quads: std::collections::BTreeMap::new(),
+			pos_z: BTreeMap::new(),
+			neg_z: BTreeMap::new(),
 		}
 	}
 }
 
 impl<T: Ord, U> Model3<T, U> {
-	pub fn push(&mut self, transform: T, quad: Quad<U>) {
-		self.transformed_quads
-			.entry(transform)
+	pub fn push(&mut self, transform: FacedTransform<T>, quad: Quad<U>) {
+		self.faceless_mut(transform.facing)
+			.entry(transform.transform)
 			.or_default()
 			.push(quad)
 	}
 }
 
-impl<T, U> Model3<T, U> {
-	pub fn iter(&self) -> impl Iterator<Item = (&T, &[Quad<U>])> {
-		self.transformed_quads.iter().map(|(t, v)| (t, &**v))
-	}
-}
 
-impl<T, U> Model3<T, U>
-where
-	U: Copy + Eq,
-{
-	pub fn optimize_merge_quads(&mut self, axis: Axis2) {
-		for quads in self.transformed_quads.values_mut() {
-			quads.sort_unstable_by_key(|quad| (quad.position.x, quad.position.y));
-
-			let new_quads = Quad::try_merge_sorted_slice_all(quads, axis);
-
-			#[cfg(test)]
-			{
-				let src = quads.len();
-				let dst = new_quads.len();
-				let delta = src - dst;
-
-				let percent = dst as f32 / src as f32;
-
-				if delta != 0 {
-					eprintln!("along axis `{:?}`: optimized from `{}` quads to `{}`, total `{}` quads removed, approx. `{}`%", axis, src, dst, delta, percent);
-				}
-			}
-		}
-	}
-}
-
-impl<T: Plane + Copy, U: Copy> Model3<T, U> {
+impl<T: FacelessPlane + Copy, U: Copy> Model3<T, U> {
 	pub fn push_cube(&mut self, position: Point3<i32>, data: U) {
-		let x = T::from_axis_position(Axis3::X, position);
-		let y = T::from_axis_position(Axis3::Y, position);
-		let z = T::from_axis_position(Axis3::Z, position);
+		let x = T::from_axis_position(Axis3::X, position).with_default_facing();
+		let y = T::from_axis_position(Axis3::Y, position).with_default_facing();
+		let z = T::from_axis_position(Axis3::Z, position).with_default_facing();
 
 		// positive quads are 1 unit further along their axis than negative quads
-		self.push(x.offsetted(1), Quad::from_axis_position(Axis3::X, position, data));
-		self.push(y.offsetted(1), Quad::from_axis_position(Axis3::Y, position, data));
-		self.push(z.offsetted(1), Quad::from_axis_position(Axis3::Z, position, data));
+		self.push(x.with_offset(1), Quad::from_axis_position(Axis3::X, position, data));
+		self.push(y.with_offset(1), Quad::from_axis_position(Axis3::Y, position, data));
+		self.push(z.with_offset(1), Quad::from_axis_position(Axis3::Z, position, data));
 
 		self.push(x.flipped(), Quad::from_axis_position(Axis3::X, position, data));
 		self.push(y.flipped(), Quad::from_axis_position(Axis3::Y, position, data));
