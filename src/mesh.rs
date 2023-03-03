@@ -5,6 +5,7 @@
 use nalgebra::Point2;
 use nalgebra::Point3;
 use nalgebra::Vector2;
+use nalgebra::Vector3;
 
 pub trait MergeStrategy {
 	type Strategy: CanMergeWith;
@@ -24,10 +25,10 @@ impl CanMergeWith for () {
 
 #[derive(Debug, Copy, Clone)]
 pub struct Quad<T = ()> {
-	uv: Point2<i32>,
-	wh: Vector2<u32>,
+	pub position: Point2<i32>,
+	pub extents: Vector2<u32>,
 
-	data: T,
+	pub data: T,
 }
 
 impl Quad<()> {
@@ -39,8 +40,8 @@ impl Quad<()> {
 impl<T> Quad<T> {
 	pub fn drop_data(&self) -> Quad {
 		Quad {
-			uv: self.uv,
-			wh: self.wh,
+			position: self.position,
+			extents: self.extents,
 			data: (),
 		}
 	}
@@ -48,8 +49,8 @@ impl<T> Quad<T> {
 	pub fn with_data(uv: Point2<i32>, data: T) -> Self {
 		Self {
 			data,
-			uv,
-			wh: Vector2::new(1, 1),
+			position: uv,
+			extents: Vector2::new(1, 1),
 		}
 	}
 	pub fn from_axis_position(axis: Axis3, position: Point3<i32>, data: T) -> Self {
@@ -60,10 +61,10 @@ impl<T> Quad<T> {
 impl<T: CanMergeWith> Quad<T> {
 	pub fn can_merge_with(&self, other: &Self, axis: Axis2) -> bool {
 		let r0 = self.uv1()[axis as usize];
-		let r1 = other.uv[axis as usize];
+		let r1 = other.position[axis as usize];
 
-		let ah = self.wh[(!axis) as usize];
-		let bh = other.wh[(!axis) as usize];
+		let ah = self.extents[(!axis) as usize];
+		let bh = other.extents[(!axis) as usize];
 
 		let edges_touch = r0 == r1;
 		let edges_are_same_length = ah == bh;
@@ -72,7 +73,7 @@ impl<T: CanMergeWith> Quad<T> {
 	}
 	pub fn try_merge_with(mut self, other: Self, axis: Axis2) -> Result<Self, (Self, Self)> {
 		if self.can_merge_with(&other, axis) {
-			self.wh[axis as usize] += other.wh[axis as usize];
+			self.extents[axis as usize] += other.extents[axis as usize];
 
 			Ok(self)
 		} else {
@@ -80,10 +81,10 @@ impl<T: CanMergeWith> Quad<T> {
 		}
 	}
 	pub fn uv1(&self) -> Point2<i32> {
-		self.uv + self.wh.cast()
+		self.position + self.extents.cast()
 	}
 	pub fn contains_point(&self, point: Point2<i32>) -> bool {
-		let a0 = self.uv;
+		let a0 = self.position;
 		let a1 = self.uv1();
 
 		let x = a0.x..a1.x;
@@ -201,7 +202,8 @@ impl std::ops::Not for Facing {
 
 /// Represents a plane in 3d space
 pub trait Plane {
-	fn transform_point(point: Point2<i32>) -> Point3<i32>;
+	fn transform_point(&self, point: Point2<i32>) -> Point3<i32>;
+	fn normal(&self) -> Vector3<i32>;
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
@@ -212,6 +214,15 @@ pub struct Transform3 {
 	axis: Axis3,
 
 	coordinate: i32,
+}
+
+impl Plane for Transform3 {
+	fn transform_point(&self, point: Point2<i32>) -> Point3<i32> {
+		point.coords.insert_row(self.axis as usize, self.coordinate).into()
+	}
+	fn normal(&self) -> Vector3<i32> {
+		Vector2::new(0, 0).insert_row(self.axis as usize, self.facing as i32 * 2 - 1)
+	}
 }
 
 impl std::ops::Add<i32> for Transform3 {
@@ -272,7 +283,7 @@ where
 {
 	pub fn optimize_merge_quads(&mut self, axis: Axis2) {
 		for quads in self.transformed_quads.values_mut() {
-			quads.sort_unstable_by_key(|quad| (quad.uv.x, quad.uv.y));
+			quads.sort_unstable_by_key(|quad| (quad.position.x, quad.position.y));
 
 			let new_quads = Quad::try_merge_sorted_slice_all(quads, axis);
 
@@ -357,7 +368,7 @@ mod tests {
 
 		a.try_merge_with(b, Axis2::X).unwrap();
 
-		assert_eq!(a.wh, Vector2::new(2, 1));
+		assert_eq!(a.extents, Vector2::new(2, 1));
 	}
 
 	#[test]
@@ -367,7 +378,7 @@ mod tests {
 
 		a.try_merge_with(b, Axis2::Y).unwrap();
 
-		assert_eq!(a.wh, Vector2::new(1, 2));
+		assert_eq!(a.extents, Vector2::new(1, 2));
 	}
 
 	#[test]
@@ -387,15 +398,15 @@ mod tests {
 			Quad::new(Point2::new(0, 1)),
 		];
 
-		b.sort_unstable_by_key(|quad| *quad.uv.coords.as_ref());
+		b.sort_unstable_by_key(|quad| *quad.position.coords.as_ref());
 
 		let merged = Quad::try_merge_sorted_slice_all(&b, Axis2::Y);
 		let merged = Quad::try_merge_sorted_slice_all(&merged, Axis2::X);
 
 		eprintln!("{:?}", merged[0]);
 
-		assert_eq!(merged[0].uv, Point2::new(0, 0));
-		assert_eq!(merged[0].wh, Vector2::new(2, 2));
+		assert_eq!(merged[0].position, Point2::new(0, 0));
+		assert_eq!(merged[0].extents, Vector2::new(2, 2));
 	}
 
 	// WARNING:
