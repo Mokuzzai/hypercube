@@ -49,6 +49,8 @@ macro_rules! make_prelude {
 				pub type Multiform = $crate::shape::rt::Multiform<$D>;
 			}
 
+			pub type PositionMap<T> = $crate::PositionMap<T, $D>;
+
 			pub type View<'a, T, S> = $crate::View<'a, T, S, $D>;
 			pub type ViewRef<'a, T, S> = $crate::ViewRef<'a, T, S, $D>;
 			pub type ViewMut<'a, T, S> = $crate::ViewMut<'a, T, S, $D>;
