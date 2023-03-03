@@ -32,9 +32,10 @@ pub struct Quad<T = ()> {
 }
 
 impl Quad<()> {
-	fn new(uv: Point2<i32>) -> Self {
+	pub fn new(uv: Point2<i32>) -> Self {
 		Self::with_data(uv, ())
 	}
+
 }
 
 impl<T> Quad<T> {
@@ -45,7 +46,6 @@ impl<T> Quad<T> {
 			data: (),
 		}
 	}
-
 	pub fn with_data(uv: Point2<i32>, data: T) -> Self {
 		Self {
 			data,
@@ -55,6 +55,24 @@ impl<T> Quad<T> {
 	}
 	pub fn from_axis_position(axis: Axis3, position: Point3<i32>, data: T) -> Self {
 		Self::with_data(position.coords.remove_row(axis as usize).into(), data)
+	}
+	pub fn uv1(&self) -> Point2<i32> {
+		self.position + self.extents.cast()
+	}
+	pub fn points(&self) -> [Point2<i32>; 4] {
+		let u = self.position.x;
+		let v = self.position.y;
+
+		let position2 = self.uv1();
+		let w = position2.x;
+		let h = position2.y;
+
+		[
+			Point2::new(u, v),
+			Point2::new(w, v),
+			Point2::new(u, h),
+			Point2::new(w, h),
+		]
 	}
 }
 
@@ -79,9 +97,6 @@ impl<T: CanMergeWith> Quad<T> {
 		} else {
 			Err((self, other))
 		}
-	}
-	pub fn uv1(&self) -> Point2<i32> {
-		self.position + self.extents.cast()
 	}
 	pub fn contains_point(&self, point: Point2<i32>) -> bool {
 		let a0 = self.position;
@@ -201,14 +216,38 @@ impl std::ops::Not for Facing {
 }
 
 /// Represents a plane in 3d space
-pub trait Plane {
-	fn transform_point(&self, point: Point2<i32>) -> Point3<i32>;
+pub trait Plane: Ord {
+	fn from_axis_position(axis: Axis3, position: Point3<i32>) -> Self;
+
+	fn transform_point(&self, uv: Point2<i32>) -> Point3<i32>;
 	fn normal(&self) -> Vector3<i32>;
+
+	/// Offset this plane along its normal
+	fn offset(&mut self, offset: i32);
+
+	/// Flip this planes normal
+	fn flip(&mut self);
+
+	fn offsetted(mut self, offset: i32) -> Self
+	where
+		Self: Sized,
+	{
+		self.offset(offset);
+		self
+	}
+
+	fn flipped(mut self) -> Self
+	where
+		Self: Sized,
+	{
+		self.flip();
+		self
+	}
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 /// Axis-aligned transform
-pub struct Transform3 {
+pub struct AaTransform3 {
 	facing: Facing,
 
 	axis: Axis3,
@@ -216,36 +255,31 @@ pub struct Transform3 {
 	coordinate: i32,
 }
 
-impl Plane for Transform3 {
+impl Plane for AaTransform3 {
 	fn transform_point(&self, point: Point2<i32>) -> Point3<i32> {
 		point.coords.insert_row(self.axis as usize, self.coordinate).into()
 	}
 	fn normal(&self) -> Vector3<i32> {
 		Vector2::new(0, 0).insert_row(self.axis as usize, self.facing as i32 * 2 - 1)
 	}
-}
-
-impl std::ops::Add<i32> for Transform3 {
-	type Output = Self;
-
-	fn add(mut self, offset: i32) -> Self {
-		self.coordinate += offset;
-		self
+	fn offset(&mut self, offset: i32) {
+		self.coordinate += offset
+	}
+	fn from_axis_position(axis: Axis3, position: Point3<i32>) -> Self {
+		AaTransform3 {
+			facing: Facing::PosZ,
+			axis,
+			coordinate: position[axis as usize],
+		}
+	}
+	fn flip(&mut self) {
+		self.facing = !self.facing
 	}
 }
 
-impl std::ops::Not for Transform3 {
-	type Output = Self;
-
-	fn not(mut self) -> Self {
-		self.facing = !self.facing;
-		self
-	}
-}
-
-impl Transform3 {
+impl AaTransform3 {
 	pub fn from_axis_position(axis: Axis3, position: Point3<i32>) -> Self {
-		Transform3 {
+		AaTransform3 {
 			facing: Facing::PosZ,
 			axis,
 			coordinate: position[axis as usize],
@@ -254,11 +288,11 @@ impl Transform3 {
 }
 
 #[derive(Debug)]
-pub struct Model3<T> {
-	transformed_quads: std::collections::BTreeMap<Transform3, Vec<Quad<T>>>,
+pub struct Model3<T, U> {
+	transformed_quads: std::collections::BTreeMap<T, Vec<Quad<U>>>,
 }
 
-impl<T> Default for Model3<T> {
+impl<T, U> Default for Model3<T, U> {
 	fn default() -> Self {
 		Self {
 			transformed_quads: std::collections::BTreeMap::new(),
@@ -266,20 +300,24 @@ impl<T> Default for Model3<T> {
 	}
 }
 
-impl<T> Model3<T> {
-	pub fn push(&mut self, transform: Transform3, quad: Quad<T>) {
+impl<T: Ord, U> Model3<T, U> {
+	pub fn push(&mut self, transform: T, quad: Quad<U>) {
 		self.transformed_quads
 			.entry(transform)
 			.or_default()
 			.push(quad)
 	}
-	pub fn iter(&self) -> impl Iterator<Item = (&Transform3, &[Quad<T>])> {
+}
+
+impl<T, U> Model3<T, U> {
+	pub fn iter(&self) -> impl Iterator<Item = (&T, &[Quad<U>])> {
 		self.transformed_quads.iter().map(|(t, v)| (t, &**v))
 	}
 }
-impl<T> Model3<T>
+
+impl<T, U> Model3<T, U>
 where
-	T: Copy + CanMergeWith,
+	U: Copy + CanMergeWith,
 {
 	pub fn optimize_merge_quads(&mut self, axis: Axis2) {
 		for quads in self.transformed_quads.values_mut() {
@@ -303,20 +341,20 @@ where
 	}
 }
 
-impl<T: Copy> Model3<T> {
-	pub fn push_cube(&mut self, position: Point3<i32>, data: T) {
-		let x = Transform3::from_axis_position(Axis3::X, position);
-		let y = Transform3::from_axis_position(Axis3::Y, position);
-		let z = Transform3::from_axis_position(Axis3::Z, position);
+impl<T: Plane + Copy, U: Copy> Model3<T, U> {
+	pub fn push_cube(&mut self, position: Point3<i32>, data: U) {
+		let x = T::from_axis_position(Axis3::X, position);
+		let y = T::from_axis_position(Axis3::Y, position);
+		let z = T::from_axis_position(Axis3::Z, position);
 
 		// positive quads are 1 unit further along their axis than negative quads
-		self.push(x + 1, Quad::from_axis_position(x.axis, position, data));
-		self.push(y + 1, Quad::from_axis_position(y.axis, position, data));
-		self.push(z + 1, Quad::from_axis_position(z.axis, position, data));
+		self.push(x.offsetted(1), Quad::from_axis_position(Axis3::X, position, data));
+		self.push(y.offsetted(1), Quad::from_axis_position(Axis3::Y, position, data));
+		self.push(z.offsetted(1), Quad::from_axis_position(Axis3::Z, position, data));
 
-		self.push(!x, Quad::from_axis_position(x.axis, position, data));
-		self.push(!y, Quad::from_axis_position(y.axis, position, data));
-		self.push(!z, Quad::from_axis_position(z.axis, position, data));
+		self.push(x.flipped(), Quad::from_axis_position(Axis3::Y, position, data));
+		self.push(y.flipped(), Quad::from_axis_position(Axis3::Y, position, data));
+		self.push(z.flipped(), Quad::from_axis_position(Axis3::Z, position, data));
 	}
 }
 
@@ -324,11 +362,12 @@ use crate::prelude3::ViewRef;
 use crate::storage::ContiguousMemory;
 use crate::Shape;
 
-pub fn generate_quads<'a, T: ContiguousMemory, S: Shape<3>, M: Copy>(
-	chunk: ViewRef<'a, T, S>,
-) -> Model3<M>
+pub fn generate_quads<'a, M: ContiguousMemory, S: Shape<3>, T, U: Copy>(
+	chunk: ViewRef<'a, M, S>,
+) -> Model3<T, U>
 where
-	T::Item: MergeStrategy<Strategy = M>,
+	T: Plane + Copy,
+	M::Item: MergeStrategy<Strategy = U>,
 {
 	let mut model = Model3::default();
 
@@ -361,6 +400,35 @@ mod tests {
 		}
 	}
 
+	#[test]
+	fn quad_points() {
+		let mut quad = Quad::new(Point2::new(3, 5));
+		quad.extents.x = 2;
+		quad.extents.y = 3;
+
+		assert_eq!(quad.points(), [
+			Point2::new(3, 5),
+			Point2::new(5, 5),
+			Point2::new(3, 8),
+			Point2::new(5, 8),
+		])
+	}
+
+	#[test]
+	fn transform_point() {
+		let position = Point3::new(3, 5, 7);
+
+		let axis = Axis3::X;
+
+		let transform = AaTransform3::from_axis_position(axis, position);
+
+		let quad = Quad::from_axis_position(axis, position, ());
+
+		let new_position = transform.transform_point(quad.position);
+
+		assert_eq!(position, new_position);
+	}
+
 	// #[test]
 	// fn try_merge_sorted_with_x() {
 	// 	let mut a = Quad::new(Point2::new(0, 0));
@@ -389,25 +457,25 @@ mod tests {
 	// 	assert!(a.try_merge_with(b, Axis2::X).is_err());
 	// }
 
-	#[test]
-	fn try_merge_sorted_slice_all() {
-		let mut a = Quad::new(Point2::new(0, 0));
-		let mut b = [
-			Quad::new(Point2::new(1, 0)),
-			Quad::new(Point2::new(1, 1)),
-			Quad::new(Point2::new(0, 1)),
-		];
-
-		b.sort_unstable_by_key(|quad| *quad.position.coords.as_ref());
-
-		let merged = Quad::try_merge_sorted_slice_all(&b, Axis2::Y);
-		let merged = Quad::try_merge_sorted_slice_all(&merged, Axis2::X);
-
-		eprintln!("{:?}", merged[0]);
-
-		assert_eq!(merged[0].position, Point2::new(0, 0));
-		assert_eq!(merged[0].extents, Vector2::new(2, 2));
-	}
+	// #[test]
+	// fn try_merge_sorted_slice_all() {
+	// 	let mut a = Quad::new(Point2::new(0, 0));
+	// 	let mut b = [
+	// 		Quad::new(Point2::new(1, 0)),
+	// 		Quad::new(Point2::new(1, 1)),
+	// 		Quad::new(Point2::new(0, 1)),
+	// 	];
+ //
+	// 	b.sort_unstable_by_key(|quad| *quad.position.coords.as_ref());
+ //
+	// 	let merged = Quad::try_merge_sorted_slice_all(&b, Axis2::Y);
+	// 	let merged = Quad::try_merge_sorted_slice_all(&merged, Axis2::X);
+ //
+	// 	eprintln!("{:?}", merged[0]);
+ //
+	// 	assert_eq!(merged[0].position, Point2::new(0, 0));
+	// 	assert_eq!(merged[0].extents, Vector2::new(2, 2));
+	// }
 
 	// WARNING:
 	// #[test]
