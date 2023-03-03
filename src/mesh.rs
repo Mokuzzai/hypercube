@@ -69,8 +69,8 @@ impl<T> Quad<T> {
 
 		[
 			Point2::new(u, v),
-			Point2::new(w, v),
 			Point2::new(u, h),
+			Point2::new(w, v),
 			Point2::new(w, h),
 		]
 	}
