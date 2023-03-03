@@ -22,10 +22,10 @@ impl<T, S, const B: usize> View<T, S, B> {
 		}
 	}
 	pub fn storage(&self) -> &T {
-		&mut self.storage()
+		&self.storage
 	}
 	pub fn storage_mut(&mut self) -> &mut T {
-		&mut self.storage()
+		&mut self.storage
 	}
 	pub fn shape(&self) -> &S {
 		&self.shape
@@ -63,12 +63,22 @@ impl<T: ?Sized + ContiguousMemoryMut, S: Shape<B>, const B: usize> View<T, S, B>
 	pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T::Item> {
 		self.storage.as_mut_slice().iter_mut()
 	}
+	pub fn block_positions_mut(&mut self) -> impl Iterator<Item = (Point<i32, B>, &mut T::Item)> {
+		self.storage.as_mut_slice().iter_mut().enumerate().map(|(index, block)| {
+			(
+				self.shape
+					.index_to_position(index)
+					.unwrap_or_else(lazy_unreachable!()),
+				block,
+			)
+		})
+	}
 	pub fn block_mut(&mut self, position: Point<i32, B>) -> Option<&mut T::Item> {
 		let index = self.shape.position_to_index(position)?;
 
 		self.storage.as_mut_slice().get_mut(index)
 	}
-	pub fn replace(&mut self, position: Point<i32, B>, mut block: T::Item) -> Result<T::Item, T::Item> {
+	pub fn replace(&mut self, position: Point<i32, B>, block: T::Item) -> Result<T::Item, T::Item> {
 		if let Some(slot) = self.block_mut(position) {
 			Ok(std::mem::replace(slot, block))
 		} else {

@@ -48,12 +48,12 @@ where
 	pub fn iter_mut(&mut self) -> impl Iterator<Item = (Point<i32, C>, &mut T)> {
 		self.inner.iter_mut()
 	}
-	pub fn chunk_positions(&self) -> impl Iterator<Item = (Point<i32, C>, ViewRef<T, S, B>)> {
+	pub fn chunk_positions(&self) -> impl Iterator<Item = (Point<i32, C>, ViewRef<T, &S, B>)> {
 		self.iter().map(|(p, s)| (p, ViewRef::new(s, self.shape())))
 	}
 	pub fn chunk_positions_mut(
 		&mut self,
-	) -> impl Iterator<Item = (Point<i32, C>, ViewMut<T, S, B>)> {
+	) -> impl Iterator<Item = (Point<i32, C>, ViewMut<T, &S, B>)> {
 		self.inner
 			.iter_mut()
 			.map(|(p, s)| (p, ViewMut::new(s, &self.shape)))
@@ -96,11 +96,11 @@ where
 	pub fn storage_mut(&mut self, position: Point<i32, C>) -> Option<&mut T> {
 		self.inner.get_mut(position)
 	}
-	pub fn chunk(&self, position: Point<i32, C>) -> Option<ViewRef<T, S, B>> {
+	pub fn chunk(&self, position: Point<i32, C>) -> Option<ViewRef<T, &S, B>> {
 		self.storage(position)
 			.map(|storage| ViewRef::new(storage, self.shape()))
 	}
-	pub fn chunk_mut(&mut self, position: Point<i32, C>) -> Option<ViewMut<T, S, B>> {
+	pub fn chunk_mut(&mut self, position: Point<i32, C>) -> Option<ViewMut<T, &S, B>> {
 		self.inner
 			.get_mut(position)
 			.map(|storage| ViewMut::new(storage, &self.shape))
