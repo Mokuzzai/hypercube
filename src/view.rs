@@ -30,7 +30,6 @@ impl<T, S, const B: usize> View<T, S, B> {
 	pub fn shape(&self) -> &S {
 		&self.shape
 	}
-	// NOTE: `'a` is needed for self because `self` might own its shape
 	pub fn borrow(&self) -> ViewRef<T, &S, B> {
 		ViewRef::new(&self.storage, &self.shape)
 	}
@@ -68,6 +67,13 @@ impl<T: ?Sized + ContiguousMemoryMut, S: Shape<B>, const B: usize> View<T, S, B>
 		let index = self.shape.position_to_index(position)?;
 
 		self.storage.as_mut_slice().get_mut(index)
+	}
+	pub fn replace(&mut self, position: Point<i32, B>, mut block: T::Item) -> Result<T::Item, T::Item> {
+		if let Some(slot) = self.block_mut(position) {
+			Ok(std::mem::replace(slot, block))
+		} else {
+			Err(block)
+		}
 	}
 }
 
