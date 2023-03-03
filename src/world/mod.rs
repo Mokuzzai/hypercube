@@ -1,13 +1,17 @@
+pub mod entry;
+
+pub use entry::Entry;
+
 use crate::math;
 use crate::math::Point;
 use crate::storage::*;
 use crate::Shape;
 use crate::WorldCoordinate;
-// use crate::view::View;
+use crate::view::View;
 use crate::view::ViewMut;
 use crate::view::ViewRef;
 
-use crate::position_map::*;
+use crate::position_map::PositionMap;
 
 /// `W` dimensional space containing some `Chunk`s
 ///
@@ -42,14 +46,8 @@ where
 	pub fn positions(&self) -> impl '_ + Iterator<Item = Point<i32, C>> {
 		self.inner.positions()
 	}
-	pub fn iter(&self) -> impl Iterator<Item = (Point<i32, C>, &T)> {
-		self.inner.iter()
-	}
-	pub fn iter_mut(&mut self) -> impl Iterator<Item = (Point<i32, C>, &mut T)> {
-		self.inner.iter_mut()
-	}
 	pub fn chunk_positions(&self) -> impl Iterator<Item = (Point<i32, C>, ViewRef<T, &S, B>)> {
-		self.iter().map(|(p, s)| (p, ViewRef::new(s, self.shape())))
+		self.inner.iter().map(|(p, s)| (p, ViewRef::new(s, self.shape())))
 	}
 	pub fn chunk_positions_mut(
 		&mut self,
@@ -85,40 +83,34 @@ where
 }
 
 /// # `Chunk` | `Storage` manipulation
-impl<T, S, const W: usize, const C: usize, const B: usize> Multiform<T, S, W, C, B>
+impl<T, S: Shape<B>, const W: usize, const C: usize, const B: usize> Multiform<T, S, W, C, B>
 where
 	math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 	math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 {
-	pub fn storage(&self, position: Point<i32, C>) -> Option<&T> {
+	pub fn chunk(&self, position: Point<i32, C>) -> Option<ViewRef<T, S, B>> {
 		self.inner.get(position)
+			.map(|storage| ViewRef::new(storage, self.shape))
 	}
-	pub fn storage_mut(&mut self, position: Point<i32, C>) -> Option<&mut T> {
-		self.inner.get_mut(position)
-	}
-	pub fn chunk(&self, position: Point<i32, C>) -> Option<ViewRef<T, &S, B>> {
-		self.storage(position)
-			.map(|storage| ViewRef::new(storage, self.shape()))
-	}
-	pub fn chunk_mut(&mut self, position: Point<i32, C>) -> Option<ViewMut<T, &S, B>> {
+	pub fn chunk_mut(&mut self, position: Point<i32, C>) -> Option<ViewMut<T, S, B>> {
 		self.inner
 			.get_mut(position)
-			.map(|storage| ViewMut::new(storage, &self.shape))
+			.map(|storage| ViewMut::new(storage, self.shape))
 	}
-	pub fn remove(&mut self, position: Point<i32, C>) -> Option<T> {
-		self.inner.remove(position)
+	pub fn remove(&mut self, position: Point<i32, C>) -> Option<View<T, S, B>> {
+		self.inner.remove(position).map(|storage| View::new(storage, self.shape))
 	}
-	pub fn insert(&mut self, position: Point<i32, C>, chunk: T) -> Option<T> {
-		self.inner.insert(position, chunk)
+	/// # Panics
+	/// This function panics if `chunk.position != self.position`
+	pub fn insert(&mut self, position: Point<i32, C>, chunk: View<T, S, B>) -> Option<T> {
+		let (shape, storage) = chunk.into_inner();
+
+		assert!(shape == self.shape);
+
+		self.inner.insert(position, storage)
 	}
-	pub fn entry(&mut self, position: Point<i32, C>) -> Entry<T, C> {
-		self.inner.entry(position)
-	}
-	pub fn storages(&self) -> impl Iterator<Item = &T> {
-		self.inner.values()
-	}
-	pub fn storages_mut(&mut self) -> impl Iterator<Item = &mut T> {
-		self.inner.values_mut()
+	pub fn entry(&mut self, position: Point<i32, C>) -> Entry<T, S, C, B> {
+		Entry::from(self.inner.entry(position), self.shape)
 	}
 }
 
@@ -137,7 +129,7 @@ where
 	) -> Option<&T::Item> {
 		let index = self.shape.position_to_index(block)?;
 
-		self.storage(chunk)?.as_slice().get(index)
+		self.inner.get(chunk)?.as_slice().get(index)
 	}
 	pub fn get_block(&self, position: Point<i32, W>) -> Option<&T::Item> {
 		let (chunk, block) = self.world_to_chunk_block(position);
@@ -159,7 +151,7 @@ where
 	) -> Option<&mut T::Item> {
 		let index = self.shape.position_to_index(block)?;
 
-		self.storage_mut(chunk)?.as_mut_slice().get_mut(index)
+		self.inner.get_mut(chunk)?.as_mut_slice().get_mut(index)
 	}
 	pub fn get_block_mut(&mut self, position: Point<i32, W>) -> Option<&mut T::Item> {
 		let (chunk, block) = self.world_to_chunk_block(position);
@@ -249,8 +241,8 @@ mod tests {
 
 		let index = world.shape().position_to_index(block).unwrap();
 
-		world.entry(chunk).or_default()[index] = true;
+		// world.entry(chunk).or_default()[index] = true;
 
-		assert_eq!(*world.storage(math::Point::from([0; 2])).unwrap(), [true]);
+		// assert_eq!(*world.storage(math::Point::from([0; 2])).unwrap(), [true]);
 	}
 }

@@ -11,7 +11,7 @@ pub type WorldCoordinate<const C: usize, const B: usize> =
 use crate::math;
 use crate::Positions;
 
-pub trait Shape<const B: usize>: Sized {
+pub trait Shape<const B: usize>: Sized + Copy + Eq {
 	fn extents(&self) -> math::Vector<usize, B>;
 
 	fn positions(&self) -> Positions<B> {
@@ -90,23 +90,7 @@ impl<'a, T: Shape<B>, const B: usize> Shape<B> for &'a T {
 	// NOTE: impl rest of the methods
 }
 
-impl<'a, T: Shape<B>, const B: usize> Shape<B> for &'a mut T {
-	fn extents(&self) -> math::Vector<usize, B> {
-		T::extents(&**self)
-	}
-
-	// NOTE: impl rest of the methods
-}
-
-impl<T: Shape<B>, const B: usize> Shape<B> for Box<T> {
-	fn extents(&self) -> math::Vector<usize, B> {
-		T::extents(&**self)
-	}
-
-	// NOTE: impl rest of the methods
-}
-
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Cow<'a, T> {
 	Owned(T),
 	Borrowed(&'a T),
