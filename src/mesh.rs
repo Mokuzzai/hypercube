@@ -69,8 +69,8 @@ impl<T> Quad<T> {
 
 		[
 			Point2::new(u, v),
-			Point2::new(w, v),
 			Point2::new(u, h),
+			Point2::new(w, v),
 			Point2::new(w, h),
 		]
 	}
@@ -408,8 +408,8 @@ mod tests {
 
 		assert_eq!(quad.points(), [
 			Point2::new(3, 5),
-			Point2::new(5, 5),
 			Point2::new(3, 8),
+			Point2::new(5, 5),
 			Point2::new(5, 8),
 		])
 	}
