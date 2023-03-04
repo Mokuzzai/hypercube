@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Quad<T = ()> {
 	pub position: Point2<i32>,
 	pub extents: Vector2<u32>,
@@ -8,14 +8,21 @@ pub struct Quad<T = ()> {
 	pub data: T,
 }
 
-impl Quad<()> {
-	pub fn new(uv: Point2<i32>) -> Self {
-		Self::with_data(uv, ())
-	}
 
+impl Quad<()> {
+	pub fn new(position: Point2<i32>) -> Quad<()> {
+		Quad { position, extents: Vector2::from_element(1), data: () }
+	}
 }
 
 impl<T> Quad<T> {
+	pub fn with_data<U>(self, data: U) -> Quad<U> {
+		Quad {
+			data,
+			position: self.position,
+			extents: self.extents,
+		}
+	}
 	pub fn drop_data(&self) -> Quad {
 		Quad {
 			position: self.position,
@@ -23,15 +30,9 @@ impl<T> Quad<T> {
 			data: (),
 		}
 	}
-	pub fn with_data(uv: Point2<i32>, data: T) -> Self {
-		Self {
-			data,
-			position: uv,
-			extents: Vector2::new(1, 1),
-		}
-	}
 	pub fn from_axis_position(axis: Axis3, position: Point3<i32>, data: T) -> Self {
-		Self::with_data(position.coords.remove_row(axis.axis()).into(), data)
+		Quad::new(position.coords.remove_row(axis.axis()).into())
+			.with_data(data)
 	}
 	pub fn uv1(&self) -> Point2<i32> {
 		self.position + self.extents.cast()
@@ -60,7 +61,7 @@ impl<T> Quad<T> {
 		x.contains(&point.x) && y.contains(&point.y)
 	}
 	pub fn contains_quad<U>(&self, other: &Quad<U>) -> bool {
-		self.contains_point(other.position) && self.contains_point(other.uv1())
+		self.contains_point(other.position) && self.contains_point(other.uv1()) || self.position == other.position && self.extents == other.extents
 	}
 }
 
@@ -86,69 +87,90 @@ impl<T: Eq> Quad<T> {
 			Err((self, other))
 		}
 	}
-	// pub fn try_occluded_by(&self, other: &Self) -> Result<bool, ()> {
-	// 	if self.facing != other.facing {
-	// 		Err(())
-	// 	} else {
-	// 		Ok(self.contains_point(other.uv) && self.contains_point(other.uv1()))
-	// 	}
-	// }
-	/// # Return
-	/// Returns how many values were merged
-	pub fn try_merge_sorted_slice<'a>(&mut self, quads: &'a [Self], axis: Axis2) -> usize
-	where
-		T: Copy,
-	{
-		let mut iter = quads.iter();
-		let mut merge_count = 0;
+}
 
-		while let Some(quad) = iter.next().copied() {
-			if self.try_merge_with(quad, axis).is_err() {
-				return merge_count;
-			} else {
-				merge_count += 1;
-			}
+fn drain_filter<T>(vec: &mut Vec<T>, mut predicate: impl FnMut(&mut T) -> bool, mut callback: impl FnMut(T)) {
+	let mut i = 0;
+
+	while i < vec.len() {
+		if predicate(&mut vec[i]) {
+			let val = vec.remove(i);
+
+			callback(val)
+		} else {
+			i += 1;
 		}
-
-		return 0;
 	}
-	pub fn try_merge_sorted_slice_all(mut quads: &[Self], axis: Axis2) -> Vec<Self>
-	where
-		T: Copy,
-	{
-		let mut vec = Vec::new();
+}
 
-		let mut iter = quads.iter().copied();
+#[derive(Debug)]
+pub struct Quads<T = ()>(pub Vec<Quad<T>>);
 
-		loop {
-			println!("first iteration: {} quads left", quads.len());
+impl<T> Quads<T> {
+	pub fn iter(&self) -> impl Iterator<Item = &Quad<T>> {
+		self.0.iter()
+	}
+	pub fn push(&mut self, quad: Quad<T>) {
+		self.0.push(quad)
+	}
+	pub fn cull_occluded_faces<U>(&mut self, pat: &Quad<U>) {
+		drain_filter(&mut self.0, |quad| pat.contains_quad(quad), drop)
+	}
+}
 
-			let Some(mut acc) = iter.next() else { break };
+impl<T> Default for Quads<T> {
+	fn default() -> Self {
+		Self(Default::default())
+	}
+}
 
-			'a: loop {
-				if let Some(next) = iter.next() {
-					match acc.try_merge_with(next, axis) {
-						Ok(a) => acc = a,
-						Err((a, b)) => {
-							vec.push(a);
+#[derive(Debug)]
+pub struct PairedQuads<T = ()>([Quads<T>; 2]);
 
-							acc = b;
+impl<T> Default for PairedQuads<T> {
+	fn default() -> Self {
+		Self([Default::default(), Default::default()])
+	}
+}
 
-							break 'a;
-						}
-					}
-				} else {
-					vec.push(acc);
+impl<T> PairedQuads<T> {
+	pub fn iter(&self) -> impl Iterator<Item = &Quads<T>> {
+		self.0.iter()
+	}
+	pub fn get_mut(&mut self, facing: Facing) -> &mut Quads<T> {
+		&mut self.0[facing as usize]
+	}
+}
 
-					break 'a;
-				}
-			}
+impl<T> PairedQuads<T> {
+	pub fn cull_occluded_faces(&mut self) {
+		let [pos, neg] = &mut self.0;
 
-			std::thread::sleep(std::time::Duration::from_secs(1));
+		for pos in pos.iter() {
+			neg.cull_occluded_faces(pos)
 		}
 
-		dbg!(vec.len());
+		for neg in neg.iter() {
+			pos.cull_occluded_faces(neg)
+		}
+	}
+}
 
-		vec
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn quads_cull_occluded_faces() {
+		let mut quads = Quads::<()>::default();
+
+		let q00 = Quad::new(Point2::new(0, 0));
+
+		quads.push(q00);
+		quads.push(Quad::new(Point2::new(1, 0)));
+
+		quads.cull_occluded_faces(&q00);
+
+		assert_eq!(quads.0, &[Quad::new(Point2::new(1, 0))][..])
 	}
 }

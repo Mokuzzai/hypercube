@@ -2,44 +2,9 @@ use std::collections::BTreeMap;
 
 use super::*;
 
-fn drain_filter<T>(vec: &mut Vec<T>, mut predicate: impl FnMut(&mut T) -> bool, mut callback: impl FnMut(T)) {
-	let mut i = 0;
-
-	while i < vec.len() {
-		if predicate(&mut vec[i]) {
-			let val = vec.remove(i);
-
-			callback(val)
-		} else {
-			i += 1;
-		}
-	}
-}
-
-#[derive(Debug, Default)]
-struct FacingMap<T>([T; 2]);
-
-impl<T> FacingMap<T> {
-	fn iter(&self) -> impl Iterator<Item = &T> {
-		self.0.iter()
-	}
-	fn get_mut(&mut self, facing: Facing) -> &mut T {
-		&mut self.0[facing as usize]
-	}
-}
-
-impl<T> FacingMap<Vec<Quad<T>>> {
-	fn cull_occluded_faces(&mut self) {
-		let [pos, neg] = &mut self.0;
-
-		drain_filter(pos, |pos| neg.iter().any(|neg| pos.contains_quad(neg)), drop);
-		drain_filter(neg, |neg| pos.iter().any(|pos| neg.contains_quad(pos)), drop);
-	}
-}
-
 #[derive(Debug)]
 pub struct Model3<T, U = ()> {
-	transformed_faceless_quads: BTreeMap<T, FacingMap<Vec<Quad<U>>>>,
+	transformed_faceless_quads: BTreeMap<T, PairedQuads<U>>,
 }
 
 impl<T, U> Default for Model3<T, U> {
@@ -59,8 +24,8 @@ impl<T: Plane, U: Copy + Eq> Model3<T, U> {
 }
 
 impl<T: Copy, U> Model3<T, U> {
-	pub fn iter(&self) -> impl Iterator<Item = (FacedTransform<T>, &[Quad<U>])> {
-		self.transformed_faceless_quads.iter().flat_map(|(&t, v)| v.iter().map(move |v| (FacedTransform::new(t, Facing::PosZ), &**v)))
+	pub fn iter(&self) -> impl Iterator<Item = (FacedTransform<T>, &Quads<U>)> {
+		self.transformed_faceless_quads.iter().flat_map(|(&t, v)| v.iter().map(move |v| (FacedTransform::new(t, Facing::PosZ), v)))
 	}
 }
 

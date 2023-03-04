@@ -7,6 +7,8 @@ pub mod plane;
 pub mod quad;
 
 pub use quad::Quad;
+pub use quad::Quads;
+pub use quad::PairedQuads;
 pub use plane::Facing;
 pub use plane::FacedTransform;
 pub use plane::Plane;
