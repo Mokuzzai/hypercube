@@ -23,6 +23,14 @@ impl<T> Quad<T> {
 			extents: self.extents,
 		}
 	}
+	pub fn with_extents(mut self, extents: Vector2<u32>) -> Self {
+		self.extents = extents;
+		self
+	}
+	pub fn with_position(mut self, position: Point2<i32>) -> Self {
+		self.position = position;
+		self
+	}
 	pub fn drop_data(&self) -> Quad {
 		Quad {
 			position: self.position,
@@ -61,7 +69,8 @@ impl<T> Quad<T> {
 		x.contains(&point.x) && y.contains(&point.y)
 	}
 	pub fn contains_quad<U>(&self, other: &Quad<U>) -> bool {
-		self.contains_point(other.position) && self.contains_point(other.uv1()) || self.position == other.position && self.extents == other.extents
+		(self.position == other.position && self.extents == other.extents)
+		|| (self.contains_point(other.position) && self.contains_point(other.uv1()))
 	}
 }
 
@@ -103,7 +112,7 @@ fn drain_filter<T>(vec: &mut Vec<T>, mut predicate: impl FnMut(&mut T) -> bool, 
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Quads<T = ()>(pub Vec<Quad<T>>);
 
 impl<T> Quads<T> {
@@ -116,6 +125,10 @@ impl<T> Quads<T> {
 	pub fn cull_occluded_faces<U>(&mut self, pat: &Quad<U>) {
 		drain_filter(&mut self.0, |quad| pat.contains_quad(quad), drop)
 	}
+	pub fn cull_overlapping(&mut self) {
+		self.0.sort_unstable_by_key(|quad| (*quad.position.coords.as_ref(), *quad.extents.as_ref()));
+		self.0.dedup_by(|a, b| a.contains_quad(b))
+	}
 }
 
 impl<T> Default for Quads<T> {
@@ -124,7 +137,7 @@ impl<T> Default for Quads<T> {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct PairedQuads<T = ()>([Quads<T>; 2]);
 
 impl<T> Default for PairedQuads<T> {
@@ -140,11 +153,11 @@ impl<T> PairedQuads<T> {
 	pub fn get_mut(&mut self, facing: Facing) -> &mut Quads<T> {
 		&mut self.0[facing as usize]
 	}
-}
-
-impl<T> PairedQuads<T> {
-	pub fn cull_occluded_faces(&mut self) {
+	pub fn cull_overlapping(&mut self) {
 		let [pos, neg] = &mut self.0;
+
+		pos.cull_overlapping();
+		neg.cull_overlapping();
 
 		for pos in pos.iter() {
 			neg.cull_occluded_faces(pos)
@@ -161,6 +174,39 @@ mod tests {
 	use super::*;
 
 	#[test]
+	fn quad_contains_quad() {
+		let a = Quad::new(Point2::new(0, 0));
+		let a_copy = a;
+
+		let big_a = a.with_extents(Vector2::new(3, 3));
+		let offset_a = a.with_position(Point2::new(1, 1));
+
+		assert!(a.contains_quad(&a_copy));
+		assert!(big_a.contains_quad(&a));
+		assert!(big_a.contains_quad(&offset_a));
+		assert!(!a.contains_quad(&big_a));
+	}
+
+	// #[test]
+	fn quads_cull_overlapping() {
+		let mut quads = Quads::<()>::default();
+
+		quads.push(Quad::new(Point2::new(0, 0)).with_extents(Vector2::new(3, 3)));
+		quads.push(Quad::new(Point2::new(1, 0)));
+		quads.push(Quad::new(Point2::new(0, 0)));
+		quads.push(Quad::new(Point2::new(0, 1)));
+		quads.push(Quad::new(Point2::new(0, 0)));
+		quads.push(Quad::new(Point2::new(1, 0)));
+		quads.push(Quad::new(Point2::new(0, 1)));
+		quads.push(Quad::new(Point2::new(1, 0)));
+		quads.push(Quad::new(Point2::new(3, 3)));
+
+		quads.cull_overlapping();
+
+		assert_eq!(quads, Quads::default());
+	}
+
+	#[test]
 	fn quads_cull_occluded_faces() {
 		let mut quads = Quads::<()>::default();
 
@@ -172,5 +218,32 @@ mod tests {
 		quads.cull_occluded_faces(&q00);
 
 		assert_eq!(quads.0, &[Quad::new(Point2::new(1, 0))][..])
+	}
+
+	#[test]
+	fn paired_quads_cull_overlapping() {
+		let mut result = PairedQuads::<()>::default();
+		let mut expected = PairedQuads::<()>::default();
+
+
+		let q00 = Quad::new(Point2::new(0, 0));
+		let q01 = Quad::new(Point2::new(0, 1));
+		let q10 = Quad::new(Point2::new(1, 0));
+
+		expected.0[0].push(q01);
+		expected.0[1].push(q10);
+
+		result.0[0].push(q01);
+		result.0[1].push(q10);
+
+		assert_eq!(result, expected);
+
+		result.0[0].push(q00);
+		result.0[1].push(q00);
+		result.0[1].push(q00);
+
+		result.cull_overlapping();
+
+		assert_eq!(result, expected);
 	}
 }

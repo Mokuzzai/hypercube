@@ -17,8 +17,8 @@ impl<T, U> Default for Model3<T, U> {
 
 impl<T: Plane, U: Copy + Eq> Model3<T, U> {
 	pub fn cull_occluded_faces(&mut self) {
-		for (_, pair) in self.transformed_faceless_quads.iter_mut() {
-			pair.cull_occluded_faces();
+		for pair in self.transformed_faceless_quads.values_mut() {
+			pair.cull_overlapping();
 		}
 	}
 }
