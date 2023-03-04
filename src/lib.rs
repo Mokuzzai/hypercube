@@ -1,7 +1,7 @@
 #![warn(missing_debug_implementations)]
 
 pub mod math;
-pub mod mesh;
+pub mod model;
 pub mod position_map;
 pub mod positions;
 pub mod shape;
