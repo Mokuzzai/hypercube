@@ -117,6 +117,9 @@ impl<T> Quads<T> {
 	pub fn iter(&self) -> impl Iterator<Item = &Quad<T>> {
 		self.0.iter()
 	}
+	pub fn clear(&mut self) {
+		self.0.clear()
+	}
 	pub fn contains_quad<U>(&self, pat: &Quad<U>) -> bool {
 		self.iter().any(|quad| quad.contains_quad(&pat))
 	}
@@ -157,6 +160,9 @@ impl<T> Default for PairedQuads<T> {
 impl<T> PairedQuads<T> {
 	pub fn iter(&self) -> impl Iterator<Item = &Quads<T>> {
 		self.0.iter()
+	}
+	pub fn clear(&mut self) {
+		self.0.iter_mut().for_each(Quads::clear)
 	}
 	pub fn get_mut(&mut self, facing: Facing) -> &mut Quads<T> {
 		&mut self.0[facing as usize]

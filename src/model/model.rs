@@ -15,6 +15,12 @@ impl<T, U> Default for Model3<T, U> {
 	}
 }
 
+impl<T, U> Model3<T, U> {
+	fn clear(&mut self) {
+		self.transformed_faceless_quads.values_mut().for_each(PairedQuads::clear)
+	}
+}
+
 impl<T: Plane, U: Copy + Eq> Model3<T, U> {
 	pub fn cull_occluded_faces(&mut self) {
 		for pair in self.transformed_faceless_quads.values_mut() {
