@@ -24,7 +24,7 @@ pub trait ContiguousMemoryMut: ContiguousMemory {
 	fn as_mut_slice(&mut self) -> &mut [Self::Item];
 }
 
-pub trait FromFn: Sized + ContiguousMemory {
+pub trait FromFn: Sized + Storage {
 	fn from_fn(capacity: usize, f: impl FnMut(usize) -> Self::Item) -> Self;
 }
 
@@ -178,6 +178,22 @@ const _: () = {
 		}
 	}
 
+	impl<T, O> FromFn for BitVec<T, O>
+	where
+		T: BitStore,
+		O: BitOrder,
+	{
+		fn from_fn(capacity: usize, mut f: impl FnMut(usize) -> Self::Item) -> Self {
+			let mut buffer = Self::with_capacity(capacity);
+
+			for index in 0..capacity {
+				buffer.push(f(index));
+			}
+
+			buffer
+		}
+	}
+
 	impl<T, O> Storage for BitBox<T, O>
 	where
 		T: BitStore,
@@ -193,6 +209,16 @@ const _: () = {
 	{
 		fn read(&self, index: usize) -> Option<Self::Item> {
 			self.get(index).map(|bitref| *bitref)
+		}
+	}
+
+	impl<T, O> FromFn for BitBox<T, O>
+	where
+		T: BitStore,
+		O: BitOrder,
+	{
+		fn from_fn(capacity: usize, mut f: impl FnMut(usize) -> Self::Item) -> Self {
+			BitBox::from(BitVec::from_fn(capacity, f))
 		}
 	}
 
