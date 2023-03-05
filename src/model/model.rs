@@ -16,6 +16,9 @@ impl<T, U> Default for Model3<T, U> {
 }
 
 impl<T, U> Model3<T, U> {
+	pub fn num_quads(&self) -> usize {
+		self.transformed_faceless_quads.values().map(PairedQuads::num_quads).sum()
+	}
 	pub fn clear(&mut self) {
 		self.transformed_faceless_quads.values_mut().for_each(PairedQuads::clear)
 	}
