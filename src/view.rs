@@ -109,7 +109,7 @@ impl<T: ?Sized + ContiguousMemoryMut, S: Shape<B>, const B: usize> View<T, S, B>
 	}
 }
 
-impl<T: ContiguousMemory, S: Shape<B>, const B: usize> View<T, S, B>
+impl<T, S: Shape<B>, const B: usize> View<T, S, B>
 where
 	T: FromFn,
 {
