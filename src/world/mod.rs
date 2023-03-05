@@ -46,16 +46,6 @@ where
 	pub fn positions(&self) -> impl '_ + Iterator<Item = Point<i32, C>> {
 		self.inner.positions()
 	}
-	pub fn chunk_positions(&self) -> impl Iterator<Item = (Point<i32, C>, ViewRef<T, &S, B>)> {
-		self.inner.iter().map(|(p, s)| (p, ViewRef::new(s, self.shape())))
-	}
-	pub fn chunk_positions_mut(
-		&mut self,
-	) -> impl Iterator<Item = (Point<i32, C>, ViewMut<T, &S, B>)> {
-		self.inner
-			.iter_mut()
-			.map(|(p, s)| (p, ViewMut::new(s, &self.shape)))
-	}
 }
 
 impl<T, S, const W: usize, const C: usize, const B: usize> Multiform<T, S, W, C, B>
@@ -64,6 +54,16 @@ where
 	math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 	math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 {
+	pub fn chunk_positions(&self) -> impl Iterator<Item = (Point<i32, C>, ViewRef<T, S, B>)> {
+		self.inner.iter().map(|(p, s)| (p, ViewRef::new(s, self.shape)))
+	}
+	pub fn chunk_positions_mut(
+		&mut self,
+	) -> impl Iterator<Item = (Point<i32, C>, ViewMut<T, S, B>)> {
+		self.inner
+			.iter_mut()
+			.map(|(p, s)| (p, ViewMut::new(s, self.shape)))
+	}
 	pub fn chunk_block_to_world(
 		&self,
 		chunk: Point<i32, C>,
