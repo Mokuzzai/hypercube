@@ -23,6 +23,9 @@ impl<T> Quad<T> {
 			extents: self.extents,
 		}
 	}
+	pub fn drop_data(self) -> Quad<()> {
+		Quad::new(self.position).with_extents(self.extents)
+	}
 	pub fn with_extents(mut self, extents: Vector2<u32>) -> Self {
 		self.extents = extents;
 		self
@@ -31,12 +34,8 @@ impl<T> Quad<T> {
 		self.position = position;
 		self
 	}
-	pub fn drop_data(&self) -> Quad {
-		Quad {
-			position: self.position,
-			extents: self.extents,
-			data: (),
-		}
+	pub fn as_ref(&self) -> Quad<&T> {
+		Quad::new(self.position).with_extents(self.extents).with_data(&self.data)
 	}
 	pub fn from_axis_position(axis: Axis3, position: Point3<i32>, data: T) -> Self {
 		Quad::new(position.coords.remove_row(axis.axis()).into())
@@ -63,14 +62,13 @@ impl<T> Quad<T> {
 		let a0 = self.position;
 		let a1 = self.uv1();
 
-		let x = a0.x..a1.x;
-		let y = a0.y..a1.y;
+		let x = a0.x..=a1.x;
+		let y = a0.y..=a1.y;
 
 		x.contains(&point.x) && y.contains(&point.y)
 	}
 	pub fn contains_quad<U>(&self, other: &Quad<U>) -> bool {
-		(self.position == other.position && self.extents == other.extents)
-		|| (self.contains_point(other.position) && self.contains_point(other.uv1()))
+		self.contains_point(other.position) && self.contains_point(other.uv1())
 	}
 }
 
@@ -112,7 +110,7 @@ fn drain_filter<T>(vec: &mut Vec<T>, mut predicate: impl FnMut(&mut T) -> bool, 
 	}
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Quads<T = ()>(pub Vec<Quad<T>>);
 
 impl<T> Quads<T> {
@@ -126,8 +124,24 @@ impl<T> Quads<T> {
 		drain_filter(&mut self.0, |quad| pat.contains_quad(quad), drop)
 	}
 	pub fn cull_overlapping(&mut self) {
-		self.0.sort_unstable_by_key(|quad| (*quad.position.coords.as_ref(), *quad.extents.as_ref()));
-		self.0.dedup_by(|a, b| a.contains_quad(b))
+		let clone: Vec<Quad> = self.iter().map(|quad| quad.as_ref().drop_data()).collect();
+
+		let mut i = 0;
+
+		while i < self.0.len() {
+			let target = self.0[i].as_ref().drop_data();
+
+			for (j, pat) in clone.iter().enumerate().skip(i + 1) {
+				debug_assert!(i != j);
+
+				if pat.contains_quad(&target) {
+					self.0.remove(i);
+				} else {
+					i += 1;
+				}
+			}
+		}
+
 	}
 }
 
@@ -187,11 +201,14 @@ mod tests {
 		assert!(!a.contains_quad(&big_a));
 	}
 
-	// #[test]
+	#[test]
 	fn quads_cull_overlapping() {
 		let mut quads = Quads::<()>::default();
 
 		quads.push(Quad::new(Point2::new(0, 0)).with_extents(Vector2::new(3, 3)));
+
+		let expected = quads.clone();
+
 		quads.push(Quad::new(Point2::new(1, 0)));
 		quads.push(Quad::new(Point2::new(0, 0)));
 		quads.push(Quad::new(Point2::new(0, 1)));
@@ -203,7 +220,7 @@ mod tests {
 
 		quads.cull_overlapping();
 
-		assert_eq!(quads, Quads::default());
+		assert_eq!(quads, expected);
 	}
 
 	#[test]
