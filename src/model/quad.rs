@@ -145,7 +145,7 @@ impl<T> Default for Quads<T> {
 	}
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PairedQuads<T = ()>([Quads<T>; 2]);
 
 impl<T> Default for PairedQuads<T> {
@@ -164,14 +164,17 @@ impl<T> PairedQuads<T> {
 	pub fn cull_overlapping(&mut self) {
 		let [pos, neg] = &mut self.0;
 
+		let pos_clone = Quads(pos.iter().map(|quad| quad.as_ref().drop_data()).collect());
+		let neg_clone = Quads(neg.iter().map(|quad| quad.as_ref().drop_data()).collect());
+
 		pos.cull_overlapping();
 		neg.cull_overlapping();
 
-		for pos in pos.iter() {
+		for pos in pos_clone.iter() {
 			neg.cull_occluded_faces(pos)
 		}
 
-		for neg in neg.iter() {
+		for neg in neg_clone.iter() {
 			pos.cull_occluded_faces(neg)
 		}
 	}
@@ -255,30 +258,27 @@ mod tests {
 		}
 	}
 
-	// #[test]
-	// fn paired_quads_cull_overlapping() {
-	// 	let mut result = PairedQuads::<()>::default();
-	// 	let mut expected = PairedQuads::<()>::default();
- //
- //
-	// 	let q00 = Quad::new(Point2::new(0, 0));
-	// 	let q01 = Quad::new(Point2::new(0, 1));
-	// 	let q10 = Quad::new(Point2::new(1, 0));
- //
-	// 	expected.0[0].push(q01);
-	// 	expected.0[1].push(q10);
- //
-	// 	result.0[0].push(q01);
-	// 	result.0[1].push(q10);
- //
-	// 	assert_eq!(result, expected);
- //
-	// 	result.0[0].push(q00);
-	// 	result.0[1].push(q00);
-	// 	result.0[1].push(q00);
- //
-	// 	result.cull_overlapping();
- //
-	// 	assert_eq!(result, expected);
-	// }
+	#[test]
+	fn paired_quads_cull_overlapping() {
+		let mut result = PairedQuads::<()>::default();
+		let mut expected = PairedQuads::<()>::default();
+
+		let q00 = Quad::new(Point2::new(0, 0));
+		let q01 = Quad::new(Point2::new(0, 1));
+		let q10 = Quad::new(Point2::new(1, 0));
+
+		expected.0[0].push(q01);
+		expected.0[1].push(q10);
+		result.0[0].push(q01);
+		result.0[1].push(q10);
+
+		assert_eq!(result, expected);
+
+		result.0[0].push(q00);
+		result.0[1].push(q00);
+
+		result.cull_overlapping();
+
+		assert_eq!(result, expected);
+	}
 }

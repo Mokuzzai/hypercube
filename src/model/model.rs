@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use super::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Model3<T, U = ()> {
 	transformed_faceless_quads: BTreeMap<T, PairedQuads<U>>,
 }
@@ -63,12 +63,29 @@ mod tests {
 	use super::*;
 
 	#[test]
-	fn cull_occluded_faces() {
+	fn cull_occluded_faces_noop() {
 		let mut model = Model3::<AaPlane3>::default();
 
 		model.push_cube(Point3::new(0, 0, 0), ());
 
+		let clone = model.clone();
 
+		model.cull_occluded_faces();
 
+		assert_eq!(model, clone);
+	}
+
+	#[test]
+	fn cull_occluded_faces() {
+		let mut model = Model3::<AaPlane3>::default();
+
+		model.push_cube(Point3::new(0, 0, 0), ());
+		model.push_cube(Point3::new(1, 0, 0), ());
+
+		let clone = model.clone();
+
+		model.cull_occluded_faces();
+
+		assert_ne!(model, clone);
 	}
 }
