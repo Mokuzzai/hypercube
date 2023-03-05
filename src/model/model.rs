@@ -16,7 +16,7 @@ impl<T, U> Default for Model3<T, U> {
 }
 
 impl<T, U> Model3<T, U> {
-	fn clear(&mut self) {
+	pub fn clear(&mut self) {
 		self.transformed_faceless_quads.values_mut().for_each(PairedQuads::clear)
 	}
 }
