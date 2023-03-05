@@ -155,6 +155,8 @@ defer_s! { S, &'a S, 'a }
 defer_s! { S, &'a mut S, 'a }
 defer_s_rm! { S, &'a mut S, 'a }
 
+pub use bitvec;
+
 const _: () = {
 	use bitvec::prelude::*;
 
