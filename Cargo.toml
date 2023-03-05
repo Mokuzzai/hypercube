@@ -9,4 +9,5 @@ edition = "2021"
 debug = true
 
 [dependencies]
+bitvec = "1.0.1"
 nalgebra = { version = "0.32.1" }

@@ -27,8 +27,10 @@ pub trait Plane: Ord {
 
 	/// Converts a point in uv space to world space
 	fn transform_point(&self, uv: Point2<i32>) -> Point3<i32>;
+	fn unform_point(&self, point: Point3<i32>) -> Point2<i32>;
 
 	fn normal(&self) -> Vector3<i32>;
+
 
 	/// Offset this plane along its normal
 	fn offset(&mut self, offset: i32);
@@ -113,6 +115,9 @@ impl Plane for AaPlane3 {
 	fn transform_point(&self, point: Point2<i32>) -> Point3<i32> {
 		point.coords.insert_row(self.axis.axis(), self.offset).into()
 	}
+	fn unform_point(&self, point: Point3<i32>) -> Point2<i32> {
+		point.coords.remove_row(self.axis.axis()).into()
+	}
 	fn normal(&self) -> Vector3<i32> {
 		Vector2::new(0, 0).insert_row(self.axis.axis(), 1)
 	}
@@ -145,6 +150,9 @@ enum Rotation {
 
 impl Plane for AaRot3 {
 	fn transform_point(&self, point: Point2<i32>) -> Point3<i32> {
+		todo!()
+	}
+	fn unform_point(&self, point: Point3<i32>) -> Point2<i32> {
 		todo!()
 	}
 	fn normal(&self) -> Vector3<i32> {

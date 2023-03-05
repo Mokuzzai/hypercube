@@ -4,6 +4,7 @@ use crate::math::Point;
 use crate::shape::Shape;
 use crate::storage::ContiguousMemory;
 use crate::storage::ContiguousMemoryMut;
+use crate::storage::ReadStorage;
 use crate::storage::FromFn;
 use crate::storage::Storage;
 
@@ -27,7 +28,6 @@ impl<T, S, const B: usize> View<T, S, B> {
 }
 
 impl<T: ?Sized, S, const B: usize> View<T, S, B> {
-
 	pub fn storage(&self) -> &T {
 		&self.storage
 	}
@@ -43,6 +43,20 @@ impl<T: ?Sized, S, const B: usize> View<T, S, B> {
 	}
 	pub fn borrow_mut(&mut self) -> ViewMut<T, &S, B> {
 		ViewMut::new(&mut self.storage, &self.shape)
+	}
+}
+
+impl<T: ?Sized + ReadStorage<usize>, S, const B: usize> View<T, S, B> {
+	pub fn read(&self, index: usize) -> Option<T::Item> {
+		self.storage().read(index)
+	}
+}
+
+impl<T: ?Sized + ReadStorage<usize>, S: Shape<B>, const B: usize> View<T, S, B> {
+	pub fn read_position(&self, position: Point<i32, B>) -> Option<T::Item> {
+		let index = self.shape().position_to_index(position)?;
+
+		self.read(index)
 	}
 }
 

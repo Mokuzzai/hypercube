@@ -2,9 +2,19 @@ pub trait Storage {
 	type Item;
 }
 
-pub trait ComputeStorage<I>: Storage {
-	fn compute(&self, index: I) -> Self::Item;
+pub trait ReadStorage<I>: Storage {
+	fn read(&self, index: I) -> Option<Self::Item>;
 }
+
+// impl<T> ReadStorage<usize> for T
+// where
+// 	T: ContiguousMemory,
+// 	T::Item: Clone,
+// {
+// 	fn read(&self, index: usize) -> Option<Self::Item> {
+// 		self.as_slice().get(index).cloned()
+// 	}
+// }
 
 pub trait ContiguousMemory: Storage {
 	fn as_slice(&self) -> &[Self::Item];
@@ -111,9 +121,9 @@ macro_rules! defer_s {
 			type Item = $S::Item;
 		}
 
-		impl<$($lft,)* $S: ?Sized + ComputeStorage<I>, I> ComputeStorage<I> for $Self {
-			fn compute(&self, index: I) -> Self::Item {
-				$S::compute(&**self, index)
+		impl<$($lft,)* $S: ?Sized + ReadStorage<I>, I> ReadStorage<I> for $Self {
+			fn read(&self, index: I) -> Option<Self::Item> {
+				$S::read(&**self, index)
 			}
 		}
 
@@ -122,6 +132,8 @@ macro_rules! defer_s {
 				$S::as_slice(&**self)
 			}
 		}
+
+
 	}
 }
 
@@ -142,3 +154,61 @@ defer_s! { S, &'a S, 'a }
 
 defer_s! { S, &'a mut S, 'a }
 defer_s_rm! { S, &'a mut S, 'a }
+
+const _: () = {
+	use bitvec::prelude::*;
+
+	impl<T, O> Storage for BitVec<T, O>
+	where
+		T: BitStore,
+		O: BitOrder,
+	{
+		type Item = bool;
+	}
+
+	impl<T, O> ReadStorage<usize> for BitVec<T, O>
+	where
+		T: BitStore,
+		O: BitOrder,
+	{
+		fn read(&self, index: usize) -> Option<Self::Item> {
+			self.get(index).map(|bitref| *bitref)
+		}
+	}
+
+	impl<T, O> Storage for BitBox<T, O>
+	where
+		T: BitStore,
+		O: BitOrder,
+	{
+		type Item = bool;
+	}
+
+	impl<T, O> ReadStorage<usize> for BitBox<T, O>
+	where
+		T: BitStore,
+		O: BitOrder,
+	{
+		fn read(&self, index: usize) -> Option<Self::Item> {
+			self.get(index).map(|bitref| *bitref)
+		}
+	}
+
+	impl<T, O> Storage for BitSlice<T, O>
+	where
+		T: BitStore,
+		O: BitOrder,
+	{
+		type Item = bool;
+	}
+
+	impl<T, O> ReadStorage<usize> for BitSlice<T, O>
+	where
+		T: BitStore,
+		O: BitOrder,
+	{
+		fn read(&self, index: usize) -> Option<Self::Item> {
+			self.get(index).map(|bitref| *bitref)
+		}
+	}
+};

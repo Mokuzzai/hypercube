@@ -24,12 +24,30 @@ impl<T, U> Model3<T, U> {
 	}
 }
 
+use crate::storage::ReadStorage;
+use crate::Shape;
+
 impl<T: Plane, U: Copy + Eq> Model3<T, U> {
-	pub fn cull_occluded_faces(&mut self) {
+	pub fn cull_overlapping_quads(&mut self) {
 		for pair in self.transformed_faceless_quads.values_mut() {
 			pair.cull_overlapping();
 		}
 	}
+	pub fn cull_overlapping_quads_from_bitmask<V: ReadStorage<usize, Item = bool>, S: Shape<3>>(&mut self, transform: &T, mask: ViewRef<V, S>) {
+		let Some(pair) = self.transformed_faceless_quads.get_mut(transform) else { return };
+
+		for index in 0..mask.shape().capacity() {
+			let position = mask.shape().index_to_position(index).expect("Ill-formed mask; `Storage` capacity does not match `Shape`s");
+			let cull = mask.read(index).expect("Ill-formed mask; `Storage` capacity does not match `Shape`s");
+
+			if cull {
+				let quad = Quad::new(transform.unform_point(position));
+
+				pair.iter_mut().for_each(|quads| quads.cull_occluded_quads(&quad));
+			}
+		}
+	}
+
 }
 
 impl<T: Copy, U> Model3<T, U> {
@@ -79,7 +97,7 @@ mod tests {
 
 		let clone = model.clone();
 
-		model.cull_occluded_faces();
+		model.cull_overlapping_quads();
 
 		assert_eq!(model, clone);
 	}
@@ -93,7 +111,7 @@ mod tests {
 
 		let clone = model.clone();
 
-		model.cull_occluded_faces();
+		model.cull_overlapping_quads();
 
 		assert_ne!(model, clone);
 	}

@@ -129,7 +129,7 @@ impl<T> Quads<T> {
 	pub fn push(&mut self, quad: Quad<T>) {
 		self.0.push(quad)
 	}
-	pub fn cull_occluded_faces<U>(&mut self, pat: &Quad<U>) {
+	pub fn cull_occluded_quads<U>(&mut self, pat: &Quad<U>) {
 		drain_filter(&mut self.0, |quad| pat.contains_quad(quad), drop)
 	}
 	pub fn cull_overlapping(&mut self) {
@@ -164,6 +164,9 @@ impl<T> PairedQuads<T> {
 	pub fn iter(&self) -> impl Iterator<Item = &Quads<T>> {
 		self.0.iter()
 	}
+	pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Quads<T>> {
+		self.0.iter_mut()
+	}
 	pub fn num_quads(&self) -> usize {
 		self.0.iter().map(Quads::num_quads).sum()
 	}
@@ -183,11 +186,11 @@ impl<T> PairedQuads<T> {
 		neg.cull_overlapping();
 
 		for pos in pos_clone.iter() {
-			neg.cull_occluded_faces(pos)
+			neg.cull_occluded_quads(pos)
 		}
 
 		for neg in neg_clone.iter() {
-			pos.cull_occluded_faces(neg)
+			pos.cull_occluded_quads(neg)
 		}
 	}
 }
@@ -256,7 +259,7 @@ mod tests {
 		}
 
 		#[test]
-		fn cull_occluded_faces() {
+		fn cull_occluded_quads() {
 			let mut quads = Quads::<()>::default();
 
 			let q00 = Quad::new(Point2::new(0, 0));
@@ -264,7 +267,7 @@ mod tests {
 			quads.push(q00);
 			quads.push(Quad::new(Point2::new(1, 0)));
 
-			quads.cull_occluded_faces(&q00);
+			quads.cull_occluded_quads(&q00);
 
 			assert_eq!(quads.0, &[Quad::new(Point2::new(1, 0))][..])
 		}
