@@ -168,3 +168,11 @@ impl Plane for AaRot3 {
 		todo!()
 	}
 }
+
+#[test]
+fn test_facing() {
+	let t = FacedTransform::new(AaPlane3::from_axis_offset(Axis::<3>::X, 0), Facing::PosZ);
+	let t = t.flipped();
+
+	assert_eq!(t.facing, Facing::NegZ);
+}

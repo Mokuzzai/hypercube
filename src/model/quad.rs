@@ -161,11 +161,15 @@ impl<T> Default for PairedQuads<T> {
 }
 
 impl<T> PairedQuads<T> {
-	pub fn iter(&self) -> impl Iterator<Item = &Quads<T>> {
-		self.0.iter()
+	pub fn iter(&self) -> impl Iterator<Item = (Facing, &Quads<T>)> {
+		let [a, b] = &self.0;
+
+		[(Facing::PosZ, a), (Facing::NegZ, b)].into_iter()
 	}
-	pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Quads<T>> {
-		self.0.iter_mut()
+	pub fn iter_mut(&mut self) -> impl Iterator<Item = (Facing, &mut Quads<T>)> {
+		let [a, b] = &mut self.0;
+
+		[(Facing::PosZ, a), (Facing::NegZ, b)].into_iter()
 	}
 	pub fn num_quads(&self) -> usize {
 		self.0.iter().map(Quads::num_quads).sum()

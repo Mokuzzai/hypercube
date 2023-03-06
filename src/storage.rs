@@ -217,7 +217,7 @@ const _: () = {
 		T: BitStore,
 		O: BitOrder,
 	{
-		fn from_fn(capacity: usize, mut f: impl FnMut(usize) -> Self::Item) -> Self {
+		fn from_fn(capacity: usize, f: impl FnMut(usize) -> Self::Item) -> Self {
 			BitBox::from(BitVec::from_fn(capacity, f))
 		}
 	}

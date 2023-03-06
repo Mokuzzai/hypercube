@@ -43,7 +43,7 @@ impl<T: Plane, U: Copy + Eq> Model3<T, U> {
 			if cull {
 				let quad = Quad::new(transform.unform_point(position));
 
-				pair.iter_mut().for_each(|quads| quads.cull_occluded_quads(&quad));
+				pair.iter_mut().for_each(|(_, quads)| quads.cull_occluded_quads(&quad));
 			}
 		}
 	}
@@ -52,7 +52,7 @@ impl<T: Plane, U: Copy + Eq> Model3<T, U> {
 
 impl<T: Copy, U> Model3<T, U> {
 	pub fn iter(&self) -> impl Iterator<Item = (FacedTransform<T>, &Quads<U>)> {
-		self.transformed_faceless_quads.iter().flat_map(|(&t, v)| v.iter().map(move |v| (FacedTransform::new(t, Facing::PosZ), v)))
+		self.transformed_faceless_quads.iter().flat_map(|(&t, v)| v.iter().map(move |(f, v)| (FacedTransform::new(t, f), v)))
 	}
 }
 
