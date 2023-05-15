@@ -5,7 +5,7 @@ fn from_end_relative<S: Coordinate, const B: usize>(
 	extents: Vector<usize, B>,
 	position: Point<S, B>,
 ) -> Point<S, B> {
-	let extents = extents.cast();
+	let extents = matrix_cast(extents).unwrap();
 
 	(position + &extents)
 		.coords
@@ -26,7 +26,7 @@ pub fn world_to_block<S: Coordinate, const D: usize>(
 	extents: Vector<usize, D>,
 	world: Point<S, D>,
 ) -> Point<S, D> {
-	let extents_i32: Vector<S, D> = extents.cast();
+	let extents_i32: Vector<S, D> = matrix_cast(extents).unwrap();
 
 	let block = world
 		.coords
@@ -44,7 +44,7 @@ pub fn chunk_to_world<S: Coordinate, const D: usize>(
 	extents: Vector<usize, D>,
 	chunk: Point<S, D>,
 ) -> Point<S, D> {
-	let extents = extents.cast();
+	let extents = matrix_cast(extents).unwrap();
 
 	chunk.coords.component_mul(&extents).into()
 }
@@ -56,7 +56,7 @@ pub fn world_to_chunk_block<S: Coordinate, const D: usize>(
 ) -> UniformWorldCoordinate<S, D> {
 	let block = world_to_block(extents, world);
 
-	let extents = extents.cast();
+	let extents = matrix_cast(extents).unwrap();
 
 	let chunk = (world - block).component_div(&extents).into();
 

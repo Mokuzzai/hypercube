@@ -103,7 +103,9 @@ impl<T: Plane> FacedTransform<T> {
 	}
 
 	pub fn normal(&self) -> Vector3<T::Scalar> {
-		self.transform.normal() * crate::math::cast::<i32, T::Scalar>(self.facing as i32)
+		use num::NumCast;
+
+		self.transform.normal() * <T::Scalar as NumCast>::from(self.facing as i32).unwrap()
 	}
 
 	pub fn transform_point(&self, uv: Point2<T::Scalar>) -> Point3<T::Scalar> {

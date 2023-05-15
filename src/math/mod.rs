@@ -16,6 +16,7 @@ pub use nalgebra::Dim;
 
 /// A vector with `D` elements
 pub type Vector<T, const D: usize> = nalgebra::OVector<T, Const<D>>;
+pub type Matrix<T, const N: usize, const M: usize> = nalgebra::OMatrix<T, Const<N>, Const<M>>;
 pub use nalgebra::Point;
 
 pub trait Coordinate:
@@ -24,12 +25,11 @@ pub trait Coordinate:
 	+ PartialOrd
 	+ std::fmt::Debug
 	+ num::Num
+	+ num::NumCast
 	+ nalgebra::ClosedAdd
 	+ nalgebra::ClosedDiv
 	+ nalgebra::ClosedMul
 	+ nalgebra::ClosedSub
-	+ simba::scalar::SupersetOf<usize>
-	+ simba::scalar::SupersetOf<i32>
 {
 }
 
@@ -39,28 +39,28 @@ impl<T> Coordinate for T where
 	+ PartialOrd
 	+ std::fmt::Debug
 	+ num::Num
+	+ num::NumCast
 	+ nalgebra::ClosedAdd
 	+ nalgebra::ClosedDiv
 	+ nalgebra::ClosedMul
 	+ nalgebra::ClosedSub
-	+ simba::scalar::SupersetOf<usize>
-	+ simba::scalar::SupersetOf<i32>
 {
 }
 
+pub fn matrix_cast<T: Coordinate, U: Coordinate, const N: usize, const M: usize>(v: Matrix<T, N, M>) -> Option<Matrix<U, N, M>> {
+	let mut out = Matrix::zeros();
 
-fn _assert_coordinates() {
-	fn _assert_coordinate<T: Coordinate>() {}
+	if false { return Some(out) }
 
-	_assert_coordinate::<i32>();
-	_assert_coordinate::<f32>();
+	for (slot, &scalar) in out.iter_mut().zip(v.iter()) {
+		*slot = U::from(scalar)?;
+	}
+
+	Some(out)
 }
 
-pub fn cast<T, U>(t: T) -> U
-where
-	U: simba::scalar::SupersetOf<T>,
-{
-	simba::scalar::SupersetOf::from_subset(&t)
+pub fn point_cast<T: Coordinate, U: Coordinate, const N: usize>(p: Point<T, N>) -> Option<Point<U, N>> {
+	matrix_cast(p.coords).map(Into::into)
 }
 
 pub use simba::scalar::SubsetOf;

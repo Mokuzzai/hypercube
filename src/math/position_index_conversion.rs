@@ -13,7 +13,7 @@ pub fn position_to_index<S: Coordinate, const B: usize>(
 	(0..B).try_fold(0, |acc, i| {
 		let stride = extents[i];
 
-		let coordinate: usize = position[i].to_subset()?;
+		let coordinate = position[i].to_usize()?;
 
 		if coordinate >= stride {
 			return None;
@@ -37,7 +37,7 @@ pub fn index_to_position<S: Coordinate, const B: usize>(
 
 		let stride = index / subd % extents[i];
 
-		S::from_subset(&stride)
+		S::from(stride).unwrap()
 	}))))
 }
 

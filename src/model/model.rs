@@ -48,7 +48,7 @@ impl<T: Plane + Send + Sync, U: Clone + PartialEq + Send + Sync> Model3<T, U> {
 			let cull = mask.read(index).expect("Ill-formed mask; `Storage` capacity does not match `Shape`s");
 
 			if cull {
-				let quad = Quad::new(transform.unform_point(position.map(crate::math::cast)));
+				let quad = Quad::new(transform.unform_point(crate::math::point_cast(position).unwrap()));
 
 				pair.iter_mut().for_each(|(_, quads)| quads.cull_occluded_quads(&quad));
 			}
