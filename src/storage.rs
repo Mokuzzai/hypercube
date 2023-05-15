@@ -132,8 +132,6 @@ macro_rules! defer_s {
 				$S::as_slice(&**self)
 			}
 		}
-
-
 	}
 }
 
@@ -240,3 +238,43 @@ const _: () = {
 		}
 	}
 };
+
+#[derive(Debug, Default, Copy, Clone)]
+pub struct WithPayload<S: ?Sized, P> {
+	pub payload: P,
+	pub storage: S,
+}
+
+impl<S, P> WithPayload<S, P> {
+	pub fn new(payload: P, storage: S) -> Self {
+		Self { payload, storage }
+	}
+}
+
+impl<S: FromFn, P: Default> FromFn for WithPayload<S, P> {
+	fn from_fn(capacity: usize, f: impl FnMut(usize) -> Self::Item) -> Self {
+		Self::new(P::default(), S::from_fn(capacity, f))
+	}
+}
+
+impl<S: ?Sized + Storage, P> Storage for WithPayload<S, P> {
+	type Item = S::Item;
+}
+
+impl<S: ?Sized + ReadStorage<I>, I, P> ReadStorage<I> for WithPayload<S, P> {
+	fn read(&self, index: I) -> Option<Self::Item> {
+		self.storage.read(index)
+	}
+}
+
+impl<S: ?Sized + ContiguousMemory, P> ContiguousMemory for WithPayload<S, P> {
+	fn as_slice(&self) -> &[Self::Item] {
+		self.storage.as_slice()
+	}
+}
+
+impl<S: ?Sized + ContiguousMemoryMut, P> ContiguousMemoryMut for WithPayload<S, P> {
+	fn as_mut_slice(&mut self) -> &mut [Self::Item] {
+		self.storage.as_mut_slice()
+	}
+}

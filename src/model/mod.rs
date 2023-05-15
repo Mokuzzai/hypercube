@@ -20,40 +20,36 @@ use nalgebra::Point3;
 use nalgebra::Vector2;
 use nalgebra::Vector3;
 
-type Axis2 = Axis<2>;
-type Axis3 = Axis<3>;
+use crate::math::Coordinate;
+use num::FromPrimitive;
 
-#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub struct Axis<const D: usize> {
-	axis: usize,
+#[derive(Debug, Copy, Default, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(serde::Serialize, serde::Deserialize)]
+pub enum Axis2 {
+	#[default]
+	X,
+	Y,
 }
 
-impl<const D: usize> Axis<D> {
-	pub const fn new(axis: usize) -> Self {
-		assert!(axis < D);
-
-		Self { axis }
-	}
+impl Axis2 {
 	pub fn axis(self) -> usize {
-		self.axis
+		self as usize
 	}
 }
 
-impl Axis<0> {}
-
-impl Axis<1> {
-	const X: Self = Self::new(0);
+#[derive(Debug, Copy, Default, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(serde::Serialize, serde::Deserialize)]
+pub enum Axis3 {
+	#[default]
+	X,
+	Y,
+	Z,
 }
 
-impl Axis<2> {
-	const X: Self = Self::new(0);
-	const Y: Self = Self::new(1);
-}
-
-impl Axis<3> {
-	const X: Self = Self::new(0);
-	const Y: Self = Self::new(1);
-	const Z: Self = Self::new(2);
+impl Axis3 {
+	pub fn axis(self) -> usize {
+		self as usize
+	}
 }
 
 impl std::ops::Not for Axis2 {
@@ -68,14 +64,26 @@ impl std::ops::Not for Axis2 {
 	}
 }
 
-use crate::prelude3::ViewRef;
+// pub fn tranlate_quad<S: Coordinate, T>(translation: Vector3<S>, mut plane: AaPlane3<S>, mut quad: Quad<T>) -> (AaPlane3<S>, Quad<T>) {
+// 	let axis = plane.axis;
+//
+// 	plane.offset(translation[axis.axis()]);
+//
+// 	let translation = translation.remove_row(axis.axis());
+//
+// 	quad.position += translation;
+//
+// 	(plane, quad)
+// }
+
+use crate::prelude3::ChunkRef;
 use crate::storage::ContiguousMemory;
 use crate::Shape;
 
 #[cfg(test)]
 mod tests {
 	use crate::prelude3::ct::Uniform;
-	use crate::prelude3::View;
+	use crate::prelude3::Chunk;
 
 	use super::*;
 
@@ -108,7 +116,7 @@ mod tests {
 
 						let transform = AaPlane3::from_axis_position(axis, position);
 
-						let quad = Quad::from_axis_position(axis, position, ());
+						let quad = Quad::from_axis_position(axis, position);
 
 						let new_position = transform.transform_point(quad.position);
 

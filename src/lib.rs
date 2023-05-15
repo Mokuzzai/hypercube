@@ -1,4 +1,5 @@
 #![warn(missing_debug_implementations)]
+#![allow(soft_unstable)]
 
 pub mod math;
 pub mod model;
@@ -6,14 +7,14 @@ pub mod position_map;
 pub mod positions;
 pub mod shape;
 pub mod storage;
-pub mod view;
+pub mod chunk;
 pub mod world;
 
 pub use position_map::PositionMap;
 
-pub use world::Multiform;
-pub use world::Subform;
-pub use world::Uniform;
+// pub use world::Multiform;
+// pub use world::Subform;
+// pub use world::Uniform;
 
 pub use shape::ct;
 pub use shape::rt;
@@ -21,15 +22,16 @@ pub use shape::rt;
 pub use shape::Shape;
 pub use shape::UniformShape;
 
-pub use shape::Cow;
-pub use shape::WorldCoordinate;
+// pub use shape::Cow;
+pub(crate) use shape::UniformWorldCoordinate;
+pub(crate) use shape::WorldCoordinate;
 
 pub use positions::OffsetPositions;
 pub use positions::Positions;
 
-pub use view::View;
-pub use view::ViewMut;
-pub use view::ViewRef;
+pub use chunk::Chunk;
+pub use chunk::ChunkMut;
+pub use chunk::ChunkRef;
 
 macro_rules! lazy_unreachable {
 	($($t:tt)*) => {{ || unreachable!($($t)*)} }
@@ -51,9 +53,9 @@ macro_rules! make_prelude {
 
 			pub type PositionMap<T> = $crate::PositionMap<T, $D>;
 
-			pub type View<T, S> = $crate::View<T, S, $D>;
-			pub type ViewRef<'a, T, S> = $crate::ViewRef<'a, T, S, $D>;
-			pub type ViewMut<'a, T, S> = $crate::ViewMut<'a, T, S, $D>;
+			pub type Chunk<T, S> = $crate::Chunk<T, S, $D>;
+			pub type ChunkRef<'a, T, S> = $crate::ChunkRef<'a, T, S, $D>;
+			pub type ChunkMut<'a, T, S> = $crate::ChunkMut<'a, T, S, $D>;
 
 			// pub trait Shape = $crate::Shape<$D>;
 			// pub trait UniformShape = $crate::UniformShape<$D>;

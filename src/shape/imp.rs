@@ -9,7 +9,7 @@ pub mod rt {
 		stride: usize,
 	}
 	impl<const B: usize> Uniform<B> {
-		pub fn new(stride: usize) -> Self {
+		pub const fn new(stride: usize) -> Self {
 			Self { stride }
 		}
 	}
@@ -34,7 +34,7 @@ pub mod rt {
 		extents: math::Vector<usize, B>,
 	}
 	impl<const B: usize> Multiform<B> {
-		pub fn new(extents: math::Vector<usize, B>) -> Self {
+		pub const fn new(extents: math::Vector<usize, B>) -> Self {
 			Self { extents }
 		}
 	}

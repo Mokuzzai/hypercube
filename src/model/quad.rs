@@ -1,50 +1,50 @@
 use super::*;
+use crate::math::Coordinate;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub struct Quad<T = ()> {
-	pub position: Point2<i32>,
-	pub extents: Vector2<u32>,
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct Quad<S: Coordinate, T> {
+	pub position: Point2<S>,
+	pub extents: Vector2<S>,
 
 	pub data: T,
 }
 
-
-impl Quad<()> {
-	pub fn new(position: Point2<i32>) -> Quad<()> {
-		Quad { position, extents: Vector2::from_element(1), data: () }
+impl<S: Coordinate> Quad<S, ()> {
+	pub fn new(position: Point2<S>) -> Self {
+		Quad { position, extents: Vector2::from_element(S::one()), data: () }
+	}
+	pub fn from_axis_position(axis: Axis3, position: Point3<S>) -> Self {
+		Quad::new(position.coords.remove_row(axis.axis()).into())
 	}
 }
 
-impl<T> Quad<T> {
-	pub fn with_data<U>(self, data: U) -> Quad<U> {
+impl<S: Coordinate, T> Quad<S, T> {
+	pub fn with_data<U>(self, data: U) -> Quad<S, U> {
 		Quad {
 			data,
 			position: self.position,
 			extents: self.extents,
 		}
 	}
-	pub fn drop_data(self) -> Quad<()> {
+	pub fn drop_data(self) -> Quad<S, ()> {
 		Quad::new(self.position).with_extents(self.extents)
 	}
-	pub fn with_extents(mut self, extents: Vector2<u32>) -> Self {
+	pub fn with_extents(mut self, extents: Vector2<S>) -> Self {
 		self.extents = extents;
 		self
 	}
-	pub fn with_position(mut self, position: Point2<i32>) -> Self {
+	pub fn with_position(mut self, position: Point2<S>) -> Self {
 		self.position = position;
 		self
 	}
-	pub fn as_ref(&self) -> Quad<&T> {
+	pub fn as_ref(&self) -> Quad<S, &T> {
 		Quad::new(self.position).with_extents(self.extents).with_data(&self.data)
 	}
-	pub fn from_axis_position(axis: Axis3, position: Point3<i32>, data: T) -> Self {
-		Quad::new(position.coords.remove_row(axis.axis()).into())
-			.with_data(data)
+	pub fn uv1(&self) -> Point2<S> {
+		self.position + self.extents
 	}
-	pub fn uv1(&self) -> Point2<i32> {
-		self.position + self.extents.cast()
-	}
-	pub fn points(&self) -> [Point2<i32>; 4] {
+	pub fn points(&self) -> [Point2<S>; 4] {
 		let u = self.position.x;
 		let v = self.position.y;
 
@@ -58,7 +58,8 @@ impl<T> Quad<T> {
 			Point2::new(w, v),
 			Point2::new(w, h),
 		]
-	}pub fn contains_point(&self, point: Point2<i32>) -> bool {
+	}
+	pub fn contains_point(&self, point: Point2<S>) -> bool {
 		let a0 = self.position;
 		let a1 = self.uv1();
 
@@ -67,31 +68,47 @@ impl<T> Quad<T> {
 
 		x.contains(&point.x) && y.contains(&point.y)
 	}
-	pub fn contains_quad<U>(&self, other: &Quad<U>) -> bool {
+	pub fn contains_quad<U>(&self, other: &Quad<S, U>) -> bool {
 		self.contains_point(other.position) && self.contains_point(other.uv1())
 	}
 }
 
-impl<T: Eq> Quad<T> {
+impl<S: Coordinate, T: PartialEq> Quad<S, T> {
 	pub fn can_merge_with(&self, other: &Self, axis: Axis2) -> bool {
-		let r0 = self.uv1()[axis.axis()];
-		let r1 = other.position[axis.axis()];
+		if self.data != other.data {
+			return false
+		}
 
-		let ah = self.extents[(!axis).axis()];
-		let bh = other.extents[(!axis).axis()];
+		let far = self.position[axis.axis()] + self.extents[axis.axis()];
+		let near = other.position[axis.axis()];
 
-		let edges_touch = r0 == r1;
-		let edges_are_same_length = ah == bh;
+		if far != near {
+			return false
+		}
 
-		edges_touch && edges_are_same_length && self.data == other.data
+		let this_y = self.position[(!axis).axis()];
+		let other_y = other.position[(!axis).axis()];
+
+		if this_y != other_y {
+			return false
+		}
+
+		let this_height = self.extents[(!axis).axis()];
+		let other_height = other.extents[(!axis).axis()];
+
+		if this_height != other_height {
+			return false
+		}
+
+		true
 	}
-	pub fn try_merge_with(mut self, other: Self, axis: Axis2) -> Result<Self, (Self, Self)> {
+	pub fn try_merge_with(&mut self, other: &Self, axis: Axis2) -> bool {
 		if self.can_merge_with(&other, axis) {
 			self.extents[axis.axis()] += other.extents[axis.axis()];
 
-			Ok(self)
+			true
 		} else {
-			Err((self, other))
+			false
 		}
 	}
 }
@@ -111,10 +128,12 @@ fn drain_filter<T>(vec: &mut Vec<T>, mut predicate: impl FnMut(&mut T) -> bool, 
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Quads<T = ()>(pub Vec<Quad<T>>);
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(transparent)]
+pub struct Quads<S: Coordinate, T>(pub Vec<Quad<S, T>>);
 
-impl<T> Quads<T> {
-	pub fn iter(&self) -> impl Iterator<Item = &Quad<T>> {
+impl<S: Coordinate, T> Quads<S, T> {
+	pub fn iter(&self) -> impl Iterator<Item = &Quad<S, T>> {
 		self.0.iter()
 	}
 	pub fn clear(&mut self) {
@@ -123,13 +142,13 @@ impl<T> Quads<T> {
 	pub fn num_quads(&self) -> usize {
 		self.0.len()
 	}
-	pub fn contains_quad<U>(&self, pat: &Quad<U>) -> bool {
+	pub fn contains_quad<U>(&self, pat: &Quad<S, U>) -> bool {
 		self.iter().any(|quad| quad.contains_quad(&pat))
 	}
-	pub fn push(&mut self, quad: Quad<T>) {
+	pub fn push(&mut self, quad: Quad<S, T>) {
 		self.0.push(quad)
 	}
-	pub fn cull_occluded_quads<U>(&mut self, pat: &Quad<U>) {
+	pub fn cull_occluded_quads<U>(&mut self, pat: &Quad<S, U>) {
 		drain_filter(&mut self.0, |quad| pat.contains_quad(quad), drop)
 	}
 	pub fn cull_overlapping(&mut self) {
@@ -145,43 +164,82 @@ impl<T> Quads<T> {
 	}
 }
 
-impl<T> Default for Quads<T> {
+impl<S: Coordinate, T: PartialEq> Quads<S, T> {
+	pub fn push_merge(&mut self, quad: Quad<S, T>, axis: Axis2) {
+		if self._merge_into(&quad, axis) {
+
+		} else {
+			self.push(quad)
+		}
+	}
+	pub fn merge_adjacent(&mut self) {
+		self.merge_adjacent_axis(Axis2::X);
+		self.merge_adjacent_axis(Axis2::Y);
+	}
+	fn _merge_into(&mut self, quad: &Quad<S, T>, axis: Axis2) -> bool {
+		for acc in self.0.iter_mut() {
+			if acc.try_merge_with(quad, axis) {
+				return true
+			}
+		}
+
+		false
+	}
+	pub fn merge_adjacent_axis(&mut self, axis: Axis2) {
+		let mut new = Self::default();
+
+		for mut quad in self.0.drain(..) {
+			new.push_merge(quad, axis)
+		}
+
+		*self = new;
+	}
+}
+
+impl<S: Coordinate, T> Default for Quads<S, T> {
 	fn default() -> Self {
 		Self(Default::default())
 	}
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct PairedQuads<T = ()>([Quads<T>; 2]);
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct PairedQuads<S: Coordinate, T> {
+	pos: Quads<S, T>,
+	neg: Quads<S, T>,
+}
 
-impl<T> Default for PairedQuads<T> {
+impl<S: Coordinate, T> Default for PairedQuads<S, T> {
 	fn default() -> Self {
-		Self([Default::default(), Default::default()])
+		Self { pos: Default::default(), neg: Default::default() }
 	}
 }
 
-impl<T> PairedQuads<T> {
-	pub fn iter(&self) -> impl Iterator<Item = (Facing, &Quads<T>)> {
-		let [a, b] = &self.0;
+impl<S: Coordinate, T> PairedQuads<S, T> {
+	pub fn iter(&self) -> impl Iterator<Item = (Facing, &Quads<S, T>)> {
+		let Self { pos, neg } = self;
 
-		[(Facing::PosZ, a), (Facing::NegZ, b)].into_iter()
+		[(Facing::PosZ, pos), (Facing::NegZ, neg)].into_iter()
 	}
-	pub fn iter_mut(&mut self) -> impl Iterator<Item = (Facing, &mut Quads<T>)> {
-		let [a, b] = &mut self.0;
+	pub fn iter_mut(&mut self) -> impl Iterator<Item = (Facing, &mut Quads<S, T>)> {
+		let Self { pos, neg } = self;
 
-		[(Facing::PosZ, a), (Facing::NegZ, b)].into_iter()
+		[(Facing::PosZ, pos), (Facing::NegZ, neg)].into_iter()
 	}
 	pub fn num_quads(&self) -> usize {
-		self.0.iter().map(Quads::num_quads).sum()
+		self.iter().map(|(_, quads)| quads.num_quads()).sum()
 	}
 	pub fn clear(&mut self) {
-		self.0.iter_mut().for_each(Quads::clear)
+		self.iter_mut().for_each(|(_, quads)| quads.clear())
 	}
-	pub fn get_mut(&mut self, facing: Facing) -> &mut Quads<T> {
-		&mut self.0[facing as usize]
+	pub fn get_mut(&mut self, facing: Facing) -> &mut Quads<S, T> {
+		match facing {
+			Facing::PosZ => &mut self.pos,
+			Facing::NegZ => &mut self.neg
+		}
 	}
 	pub fn cull_overlapping(&mut self) {
-		let [pos, neg] = &mut self.0;
+		let Self { pos, neg } = self;
 
 		let pos_clone = Quads(pos.iter().map(|quad| quad.as_ref().drop_data()).collect());
 		let neg_clone = Quads(neg.iter().map(|quad| quad.as_ref().drop_data()).collect());
@@ -196,6 +254,16 @@ impl<T> PairedQuads<T> {
 		for neg in neg_clone.iter() {
 			pos.cull_occluded_quads(neg)
 		}
+	}
+}
+
+impl<S: Coordinate, T: PartialEq> PairedQuads<S, T> {
+	pub fn push_cull_merge(&mut self, facing: Facing, quad: Quad<S, T>, axis: Axis2) {
+		for (_, quads) in self.iter_mut() {
+			quads.cull_occluded_quads(&quad);
+		}
+
+		self.get_mut(facing).push_merge(quad, axis)
 	}
 }
 
@@ -226,7 +294,7 @@ mod tests {
 
 		#[test]
 		fn contains_quad() {
-			let mut quads = Quads::<()>::default();
+			let mut quads = Quads::<i32, ()>::default();
 
 			quads.push(Quad::new(Point2::new(1, 0)));
 			quads.push(Quad::new(Point2::new(0, 0)));
@@ -242,7 +310,7 @@ mod tests {
 
 		#[test]
 		fn cull_overlapping() {
-			let mut quads = Quads::<()>::default();
+			let mut quads = Quads::<i32, ()>::default();
 
 			quads.push(Quad::new(Point2::new(0, 0)).with_extents(Vector2::new(3, 3)));
 			quads.push(Quad::new(Point2::new(3, 3)));
@@ -264,7 +332,7 @@ mod tests {
 
 		#[test]
 		fn cull_occluded_quads() {
-			let mut quads = Quads::<()>::default();
+			let mut quads = Quads::<i32, ()>::default();
 
 			let q00 = Quad::new(Point2::new(0, 0));
 
@@ -279,22 +347,22 @@ mod tests {
 
 	#[test]
 	fn paired_quads_cull_overlapping() {
-		let mut result = PairedQuads::<()>::default();
-		let mut expected = PairedQuads::<()>::default();
+		let mut result = PairedQuads::<i32, ()>::default();
+		let mut expected = PairedQuads::<i32, ()>::default();
 
 		let q00 = Quad::new(Point2::new(0, 0));
 		let q01 = Quad::new(Point2::new(0, 1));
 		let q10 = Quad::new(Point2::new(1, 0));
 
-		expected.0[0].push(q01);
-		expected.0[1].push(q10);
-		result.0[0].push(q01);
-		result.0[1].push(q10);
+		expected.pos.push(q01);
+		expected.neg.push(q10);
+		result.pos.push(q01);
+		result.neg.push(q10);
 
 		assert_eq!(result, expected);
 
-		result.0[0].push(q00);
-		result.0[1].push(q00);
+		result.pos.push(q00);
+		result.neg.push(q00);
 
 		result.cull_overlapping();
 

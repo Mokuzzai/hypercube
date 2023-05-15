@@ -1,29 +1,32 @@
 use super::*;
 
-fn from_end_relative<const B: usize>(
+#[inline(always)]
+fn from_end_relative<S: Coordinate, const B: usize>(
 	extents: Vector<usize, B>,
-	position: Point<i32, B>,
-) -> Point<i32, B> {
+	position: Point<S, B>,
+) -> Point<S, B> {
 	let extents = extents.cast();
 
-	(position + extents)
+	(position + &extents)
 		.coords
 		.zip_map(&extents, std::ops::Rem::rem)
 		.into()
 }
 
-pub fn world_to_chunk<const D: usize>(
+#[inline(always)]
+pub fn world_to_chunk<S: Coordinate, const D: usize>(
 	extents: Vector<usize, D>,
-	world: Point<i32, D>,
-) -> Point<i32, D> {
+	world: Point<S, D>,
+) -> Point<S, D> {
 	world_to_chunk_block(extents, world).0
 }
 
-pub fn world_to_block<const D: usize>(
+#[inline(always)]
+pub fn world_to_block<S: Coordinate, const D: usize>(
 	extents: Vector<usize, D>,
-	world: Point<i32, D>,
-) -> Point<i32, D> {
-	let extents_i32: Vector<i32, D> = extents.cast();
+	world: Point<S, D>,
+) -> Point<S, D> {
+	let extents_i32: Vector<S, D> = extents.cast();
 
 	let block = world
 		.coords
@@ -36,19 +39,21 @@ pub fn world_to_block<const D: usize>(
 	block
 }
 
-pub fn chunk_to_world<const D: usize>(
+#[inline(always)]
+pub fn chunk_to_world<S: Coordinate, const D: usize>(
 	extents: Vector<usize, D>,
-	chunk: Point<i32, D>,
-) -> Point<i32, D> {
+	chunk: Point<S, D>,
+) -> Point<S, D> {
 	let extents = extents.cast();
 
 	chunk.coords.component_mul(&extents).into()
 }
 
-pub fn world_to_chunk_block<const D: usize>(
+#[inline(always)]
+pub fn world_to_chunk_block<S: Coordinate, const D: usize>(
 	extents: Vector<usize, D>,
-	world: Point<i32, D>,
-) -> WorldCoordinate<D, D> {
+	world: Point<S, D>,
+) -> UniformWorldCoordinate<S, D> {
 	let block = world_to_block(extents, world);
 
 	let extents = extents.cast();
@@ -58,17 +63,18 @@ pub fn world_to_chunk_block<const D: usize>(
 	(chunk, block)
 }
 
-pub fn chunk_block_to_world<const D: usize>(
+#[inline(always)]
+pub fn chunk_block_to_world<S: Coordinate, const D: usize>(
 	extents: Vector<usize, D>,
-	chunk: Point<i32, D>,
-	block: Point<i32, D>,
-) -> Point<i32, D> {
+	chunk: Point<S, D>,
+	block: Point<S, D>,
+) -> Point<S, D> {
 	chunk_to_world(extents, chunk) + block.coords
 }
 
 #[cfg(test)]
 mod test {
-	use crate::WorldCoordinate;
+	use crate::UniformWorldCoordinate;
 
 	use super::*;
 
@@ -99,7 +105,7 @@ mod test {
 	}
 
 	#[rustfmt::skip]
-	fn debug_coordinates() -> [(WorldCoordinate<2, 2>, Point<i32, 2>); 16] {
+	fn debug_coordinates() -> [(UniformWorldCoordinate<i32, 2>, Point<i32, 2>); 16] {
 		let f = |a, b, c| {
 			(
 				(Point::from(a), Point::from(b)),

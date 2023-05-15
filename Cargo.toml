@@ -10,4 +10,19 @@ debug = true
 
 [dependencies]
 bitvec = "1.0.1"
-nalgebra = { version = "0.32.1" }
+nalgebra = { version = "0.32.1", features = ["serde-serialize"]}
+simba = "0.8.1"
+num = "0.4.0"
+serde = "1.0.160"
+rayon = "1.7"
+
+[dev-dependencies]
+criterion = "0.4.0"
+
+[[bench]]
+name = "positions"
+harness = false
+
+[[bench]]
+name = "model"
+harness = false

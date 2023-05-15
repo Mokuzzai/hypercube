@@ -3,13 +3,14 @@ pub mod entry;
 pub use entry::Entry;
 
 use crate::math;
+use crate::math::Coordinate;
 use crate::math::Point;
 use crate::storage::*;
 use crate::Shape;
 use crate::WorldCoordinate;
-use crate::view::View;
-use crate::view::ViewMut;
-use crate::view::ViewRef;
+use crate::chunk::Chunk;
+use crate::chunk::ChunkMut;
+use crate::chunk::ChunkRef;
 
 use crate::position_map::PositionMap;
 
@@ -54,30 +55,40 @@ where
 	math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 	math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 {
-	pub fn chunk_positions(&self) -> impl Iterator<Item = (Point<i32, C>, ViewRef<T, S, B>)> {
-		self.inner.iter().map(|(p, s)| (p, ViewRef::new(s, self.shape)))
+	pub fn iter(&self) -> impl Iterator<Item = (Point<i32, C>, ChunkRef<T, S, B>)> {
+		self.inner.iter().map(|(p, s)| (p, ChunkRef::new(s, self.shape)))
 	}
-	pub fn chunk_positions_mut(
+	pub fn iter_mut(
 		&mut self,
-	) -> impl Iterator<Item = (Point<i32, C>, ViewMut<T, S, B>)> {
+	) -> impl Iterator<Item = (Point<i32, C>, ChunkMut<T, S, B>)> {
 		self.inner
 			.iter_mut()
-			.map(|(p, s)| (p, ViewMut::new(s, self.shape)))
+			.map(|(p, s)| (p, ChunkMut::new(s, self.shape)))
 	}
-	pub fn chunk_block_to_world(
+	pub fn chunks(&self) -> impl Iterator<Item = ChunkRef<T, S, B>> {
+		self.inner.values().map(|s| ChunkRef::new(s, self.shape))
+	}
+	pub fn chunks_mut(
+		&mut self,
+	) -> impl Iterator<Item = ChunkMut<T, S, B>> {
+		self.inner
+			.values_mut()
+			.map(|s| ChunkMut::new(s, self.shape))
+	}
+	pub fn chunk_block_to_world<N: Coordinate>(
 		&self,
-		chunk: Point<i32, C>,
-		block: Point<i32, B>,
-	) -> Point<i32, W> {
+		chunk: Point<N, C>,
+		block: Point<N, B>,
+	) -> Point<N, W> {
 		self.shape.chunk_block_to_world(chunk, block)
 	}
-	pub fn world_to_chunk_block(&self, world: Point<i32, W>) -> WorldCoordinate<C, B> {
+	pub fn world_to_chunk_block<N: Coordinate>(&self, world: Point<N, W>) -> WorldCoordinate<N, C, B> {
 		self.shape.world_to_chunk_block(world)
 	}
-	pub fn world_to_chunk(&self, position: Point<i32, W>) -> Point<i32, C> {
+	pub fn world_to_chunk<N: Coordinate>(&self, position: Point<N, W>) -> Point<N, C> {
 		self.world_to_chunk_block(position).0
 	}
-	pub fn world_to_block(&self, position: Point<i32, W>) -> Point<i32, B> {
+	pub fn world_to_block<N: Coordinate>(&self, position: Point<N, W>) -> Point<N, B> {
 		self.world_to_chunk_block(position).1
 	}
 }
@@ -88,22 +99,22 @@ where
 	math::Const<B>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 	math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 {
-	pub fn chunk(&self, position: Point<i32, C>) -> Option<ViewRef<T, S, B>> {
+	pub fn chunk(&self, position: Point<i32, C>) -> Option<ChunkRef<T, S, B>> {
 		self.inner.get(position)
-			.map(|storage| ViewRef::new(storage, self.shape))
+			.map(|storage| ChunkRef::new(storage, self.shape))
 	}
-	pub fn chunk_mut(&mut self, position: Point<i32, C>) -> Option<ViewMut<T, S, B>> {
+	pub fn chunk_mut(&mut self, position: Point<i32, C>) -> Option<ChunkMut<T, S, B>> {
 		self.inner
 			.get_mut(position)
-			.map(|storage| ViewMut::new(storage, self.shape))
+			.map(|storage| ChunkMut::new(storage, self.shape))
 	}
-	pub fn remove(&mut self, position: Point<i32, C>) -> Option<View<T, S, B>> {
-		self.inner.remove(position).map(|storage| View::new(storage, self.shape))
+	pub fn remove(&mut self, position: Point<i32, C>) -> Option<Chunk<T, S, B>> {
+		self.inner.remove(position).map(|storage| Chunk::new(storage, self.shape))
 	}
 	/// # Panics
 	/// This function panics if `chunk.position != self.position`
-	pub fn insert(&mut self, position: Point<i32, C>, chunk: View<T, S, B>) -> Option<T> {
-		let (shape, storage) = chunk.into_inner();
+	pub fn insert(&mut self, position: Point<i32, C>, chunk: Chunk<T, S, B>) -> Option<T> {
+		let (shape, storage) = chunk.into_raw_parts();
 
 		assert!(shape == self.shape);
 

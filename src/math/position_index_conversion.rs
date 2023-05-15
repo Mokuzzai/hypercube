@@ -1,17 +1,19 @@
 use super::*;
 
+#[inline(always)]
 pub fn subdimension<const B: usize>(extents: Vector<usize, B>, limit: usize) -> usize {
 	extents.into_iter().take(limit).product()
 }
 
-pub fn position_to_index<const B: usize>(
+#[inline(always)]
+pub fn position_to_index<S: Coordinate, const B: usize>(
 	extents: Vector<usize, B>,
-	position: Point<i32, B>,
+	position: Point<S, B>,
 ) -> Option<usize> {
 	(0..B).try_fold(0, |acc, i| {
 		let stride = extents[i];
 
-		let coordinate: usize = position[i].try_into().ok()?;
+		let coordinate: usize = position[i].to_subset()?;
 
 		if coordinate >= stride {
 			return None;
@@ -21,10 +23,11 @@ pub fn position_to_index<const B: usize>(
 	})
 }
 
-pub fn index_to_position<const B: usize>(
+#[inline(always)]
+pub fn index_to_position<S: Coordinate, const B: usize>(
 	extents: Vector<usize, B>,
 	index: usize,
-) -> Option<Point<i32, B>> {
+) -> Option<Point<S, B>> {
 	if index >= subdimension(extents, B) {
 		return None;
 	}
@@ -34,23 +37,23 @@ pub fn index_to_position<const B: usize>(
 
 		let stride = index / subd % extents[i];
 
-		stride.try_into().expect("coordinate greater than i32::MAX")
+		S::from_subset(&stride)
 	}))))
 }
 
-pub fn position_to_index_offset<const B: usize>(
+pub fn position_to_index_offset<S: Coordinate, const B: usize>(
 	extents: Vector<usize, B>,
-	offset: Vector<i32, B>,
-	position: Point<i32, B>,
+	offset: Vector<S, B>,
+	position: Point<S, B>,
 ) -> Option<usize> {
 	position_to_index(extents, position - offset)
 }
 
-pub fn index_to_position_offset<const B: usize>(
+pub fn index_to_position_offset<S: Coordinate, const B: usize>(
 	extents: Vector<usize, B>,
-	offset: Vector<i32, B>,
+	offset: Vector<S, B>,
 	index: usize,
-) -> Option<Point<i32, B>> {
+) -> Option<Point<S, B>> {
 	index_to_position(extents, index).map(|position| position + offset)
 }
 
@@ -87,7 +90,7 @@ mod tests {
 	#[test]
 	fn test_position_to_index() {
 		helper(|expected, position| {
-			let result = position_to_index(Vector::from([X, Y, Z, W, V]), position.cast()).unwrap();
+			let result = position_to_index::<i32, 5>(Vector::from([X, Y, Z, W, V]), position.cast::<i32>()).unwrap();
 
 			assert_eq!(expected as usize, result);
 		})
@@ -95,7 +98,7 @@ mod tests {
 	#[test]
 	fn test_index_to_position() {
 		helper(|index, expected| {
-			let result = index_to_position(Vector::from([X, Y, Z, W, V]), index).unwrap();
+			let result = index_to_position::<i32, 5>(Vector::from([X, Y, Z, W, V]), index).unwrap();
 
 			assert_eq!(expected.cast(), result);
 		})

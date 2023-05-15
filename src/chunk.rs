@@ -8,26 +8,32 @@ use crate::storage::ReadStorage;
 use crate::storage::FromFn;
 use crate::storage::Storage;
 
+use std::ops::Deref;
+use std::ops::DerefMut;
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Chunk<T: ?Sized, S, const B: usize> {
-	shape: S,
-	storage: T,
+	pub shape: S,
+	pub storage: T,
 }
 
-impl<T, S, const B: usize> View<T, S, B> {
-	/// [`View`] may not behave correctly if `buffer.capacity() != shape.capacity()`
+impl<T, S, const B: usize> Chunk<T, S, B> {
+	/// [`Chunk`] may not behave correctly if `buffer.capacity() != shape.capacity()`
 	pub const fn new(buffer: T, shape: S) -> Self {
 		Self {
 			shape,
 			storage: buffer,
 		}
 	}
-	pub fn into_inner(self) -> (S, T) {
+	pub fn into_raw_parts(self) -> (S, T) {
 		(self.shape, self.storage)
+	}
+	pub fn map<U>(self, mut f: impl FnMut(T) -> U) -> Chunk<U, S, B> {
+		Chunk::new(f(self.storage), self.shape)
 	}
 }
 
-impl<T: ?Sized, S, const B: usize> View<T, S, B> {
+impl<T: ?Sized, S, const B: usize> Chunk<T, S, B> {
 	pub fn storage(&self) -> &T {
 		&self.storage
 	}
@@ -39,22 +45,40 @@ impl<T: ?Sized, S, const B: usize> View<T, S, B> {
 	}
 }
 
-impl<T: ?Sized, S: Copy, const B: usize> View<T, S, B> {
-	pub fn borrow(&self) -> ViewRef<T, S, B> {
-		ViewRef::new(&self.storage, self.shape)
+impl<T: ?Sized, S: Copy, const B: usize> Chunk<T, S, B> {
+	pub fn as_ref(&self) -> ChunkRef<T, S, B> {
+		ChunkRef::new(&self.storage, self.shape)
 	}
-	pub fn borrow_mut(&mut self) -> ViewMut<T, S, B> {
-		ViewMut::new(&mut self.storage, self.shape)
+	pub fn as_mut(&mut self) -> ChunkMut<T, S, B> {
+		ChunkMut::new(&mut self.storage, self.shape)
 	}
 }
 
-impl<T: ?Sized + ReadStorage<usize>, S, const B: usize> View<T, S, B> {
+impl<'a, T: Clone, S, const B: usize> ChunkRef<'a, T, S, B> {
+	pub fn cloned(self) -> Chunk<T, S, B> {
+		self.map(Clone::clone)
+	}
+}
+
+impl<T: ?Sized + Deref, S: Copy, const B: usize> Chunk<T, S, B> {
+	pub fn as_deref(&self) -> ChunkRef<T::Target, S, B> {
+		ChunkRef::new(&*self.storage, self.shape)
+	}
+}
+
+impl<T: ?Sized + DerefMut, S: Copy, const B: usize> Chunk<T, S, B> {
+	pub fn as_deref_mut(&mut self) -> ChunkMut<T::Target, S, B> {
+		ChunkMut::new(&mut *self.storage, self.shape)
+	}
+}
+
+impl<T: ?Sized + ReadStorage<usize>, S, const B: usize> Chunk<T, S, B> {
 	pub fn read(&self, index: usize) -> Option<T::Item> {
 		self.storage().read(index)
 	}
 }
 
-impl<T: ?Sized + ReadStorage<usize>, S: Shape<B>, const B: usize> View<T, S, B> {
+impl<T: ?Sized + ReadStorage<usize>, S: Shape<B>, const B: usize> Chunk<T, S, B> {
 	pub fn read_position(&self, position: Point<i32, B>) -> Option<T::Item> {
 		let index = self.shape().position_to_index(position)?;
 
@@ -62,7 +86,7 @@ impl<T: ?Sized + ReadStorage<usize>, S: Shape<B>, const B: usize> View<T, S, B> 
 	}
 }
 
-impl<T: ?Sized + ContiguousMemory, S: Shape<B>, const B: usize> View<T, S, B> {
+impl<T: ?Sized + ContiguousMemory, S: Shape<B>, const B: usize> Chunk<T, S, B> {
 	pub fn iter(&self) -> impl Iterator<Item = &T::Item> {
 		self.storage.as_slice().iter()
 	}
@@ -83,7 +107,7 @@ impl<T: ?Sized + ContiguousMemory, S: Shape<B>, const B: usize> View<T, S, B> {
 	}
 }
 
-impl<T: ?Sized + ContiguousMemoryMut, S: Shape<B>, const B: usize> View<T, S, B> {
+impl<T: ?Sized + ContiguousMemoryMut, S: Shape<B>, const B: usize> Chunk<T, S, B> {
 	pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T::Item> {
 		self.storage.as_mut_slice().iter_mut()
 	}
@@ -111,7 +135,7 @@ impl<T: ?Sized + ContiguousMemoryMut, S: Shape<B>, const B: usize> View<T, S, B>
 	}
 }
 
-impl<T, S: Shape<B>, const B: usize> View<T, S, B>
+impl<T, S: Shape<B>, const B: usize> Chunk<T, S, B>
 where
 	T: FromFn,
 {
@@ -135,14 +159,20 @@ where
 	}
 }
 
-impl<T: Storage, S: Shape<B>, const B: usize> View<T, S, B>
+impl<T: Storage, S: Shape<B>, const B: usize> Chunk<T, S, B>
+where
+	S: Default,
+{
+	pub fn from_storage(storage: T) -> Self {
+		Self::new(storage, S::default())
+	}
+}
+
+impl<T: Storage, S: Shape<B>, const B: usize> Chunk<T, S, B>
 where
 	T: FromFn,
 	S: Default,
 {
-	pub fn from_buffer(buffer: T) -> Self {
-		Self::new(buffer, S::default())
-	}
 	pub fn from_index(f: impl FnMut(usize) -> T::Item) -> Self {
 		Self::from_shape_index(S::default(), f)
 	}
@@ -151,7 +181,7 @@ where
 	}
 }
 
-impl<T: Storage, S: Shape<B>, const B: usize> Default for View<T, S, B>
+impl<T: Storage, S: Shape<B>, const B: usize> Default for Chunk<T, S, B>
 where
 	T: FromFn,
 	T::Item: Default,
@@ -162,5 +192,5 @@ where
 	}
 }
 
-pub type ViewRef<'a, T, S, const B: usize> = View<&'a T, S, B>;
-pub type ViewMut<'a, T, S, const B: usize> = View<&'a mut T, S, B>;
+pub type ChunkRef<'a, T, S, const B: usize> = Chunk<&'a T, S, B>;
+pub type ChunkMut<'a, T, S, const B: usize> = Chunk<&'a mut T, S, B>;
