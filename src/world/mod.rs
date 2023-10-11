@@ -2,15 +2,15 @@ pub mod entry;
 
 pub use entry::Entry;
 
+use crate::chunk::Chunk;
+use crate::chunk::ChunkMut;
+use crate::chunk::ChunkRef;
 use crate::math;
 use crate::math::Coordinate;
 use crate::math::Point;
 use crate::storage::*;
 use crate::Shape;
 use crate::WorldCoordinate;
-use crate::chunk::Chunk;
-use crate::chunk::ChunkMut;
-use crate::chunk::ChunkRef;
 
 use crate::position_map::PositionMap;
 
@@ -56,11 +56,11 @@ where
 	math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 {
 	pub fn iter(&self) -> impl Iterator<Item = (Point<i32, C>, ChunkRef<T, S, B>)> {
-		self.inner.iter().map(|(p, s)| (p, ChunkRef::new(s, self.shape)))
+		self.inner
+			.iter()
+			.map(|(p, s)| (p, ChunkRef::new(s, self.shape)))
 	}
-	pub fn iter_mut(
-		&mut self,
-	) -> impl Iterator<Item = (Point<i32, C>, ChunkMut<T, S, B>)> {
+	pub fn iter_mut(&mut self) -> impl Iterator<Item = (Point<i32, C>, ChunkMut<T, S, B>)> {
 		self.inner
 			.iter_mut()
 			.map(|(p, s)| (p, ChunkMut::new(s, self.shape)))
@@ -68,9 +68,7 @@ where
 	pub fn chunks(&self) -> impl Iterator<Item = ChunkRef<T, S, B>> {
 		self.inner.values().map(|s| ChunkRef::new(s, self.shape))
 	}
-	pub fn chunks_mut(
-		&mut self,
-	) -> impl Iterator<Item = ChunkMut<T, S, B>> {
+	pub fn chunks_mut(&mut self) -> impl Iterator<Item = ChunkMut<T, S, B>> {
 		self.inner
 			.values_mut()
 			.map(|s| ChunkMut::new(s, self.shape))
@@ -82,7 +80,10 @@ where
 	) -> Point<N, W> {
 		self.shape.chunk_block_to_world(chunk, block)
 	}
-	pub fn world_to_chunk_block<N: Coordinate>(&self, world: Point<N, W>) -> WorldCoordinate<N, C, B> {
+	pub fn world_to_chunk_block<N: Coordinate>(
+		&self,
+		world: Point<N, W>,
+	) -> WorldCoordinate<N, C, B> {
 		self.shape.world_to_chunk_block(world)
 	}
 	pub fn world_to_chunk<N: Coordinate>(&self, position: Point<N, W>) -> Point<N, C> {
@@ -100,7 +101,8 @@ where
 	math::Const<C>: math::DimMax<math::Const<W>, Output = math::Const<W>>,
 {
 	pub fn chunk(&self, position: Point<i32, C>) -> Option<ChunkRef<T, S, B>> {
-		self.inner.get(position)
+		self.inner
+			.get(position)
 			.map(|storage| ChunkRef::new(storage, self.shape))
 	}
 	pub fn chunk_mut(&mut self, position: Point<i32, C>) -> Option<ChunkMut<T, S, B>> {
@@ -109,7 +111,9 @@ where
 			.map(|storage| ChunkMut::new(storage, self.shape))
 	}
 	pub fn remove(&mut self, position: Point<i32, C>) -> Option<Chunk<T, S, B>> {
-		self.inner.remove(position).map(|storage| Chunk::new(storage, self.shape))
+		self.inner
+			.remove(position)
+			.map(|storage| Chunk::new(storage, self.shape))
 	}
 	/// # Panics
 	/// This function panics if `chunk.position != self.position`
@@ -250,8 +254,15 @@ mod tests {
 
 		let (chunk, block) = world.world_to_chunk_block(math::Point::from([0; 2]));
 
-		world.entry(chunk).or_default().replace(block, true).unwrap();
+		world
+			.entry(chunk)
+			.or_default()
+			.replace(block, true)
+			.unwrap();
 
-		assert_eq!(**world.chunk(math::Point::from([0; 2])).unwrap().storage(), [true]);
+		assert_eq!(
+			**world.chunk(math::Point::from([0; 2])).unwrap().storage(),
+			[true]
+		);
 	}
 }

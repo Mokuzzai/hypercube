@@ -153,8 +153,10 @@ defer_s! { S, &'a S, 'a }
 defer_s! { S, &'a mut S, 'a }
 defer_s_rm! { S, &'a mut S, 'a }
 
+#[cfg(feature = "bitvec")]
 pub use bitvec;
 
+#[cfg(feature = "bitvec")]
 const _: () = {
 	use bitvec::prelude::*;
 

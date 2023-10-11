@@ -90,7 +90,9 @@ mod tests {
 	#[test]
 	fn test_position_to_index() {
 		helper(|expected, position| {
-			let result = position_to_index::<i32, 5>(Vector::from([X, Y, Z, W, V]), position.cast::<i32>()).unwrap();
+			let result =
+				position_to_index::<i32, 5>(Vector::from([X, Y, Z, W, V]), position.cast::<i32>())
+					.unwrap();
 
 			assert_eq!(expected as usize, result);
 		})

@@ -1,6 +1,6 @@
 [package]
 name = "hypercube"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -9,20 +9,16 @@ edition = "2021"
 debug = true
 
 [dependencies]
-bitvec = "1.0.1"
-nalgebra = { version = "0.32.1", features = ["serde-serialize"]}
 simba = "0.8.1"
 num = "0.4.0"
-serde = "1.0.160"
 rayon = "1.7"
+nalgebra = { version = "0.32.3" }
+bitvec = { version = "1.0.1", optional = true }
+serde = { version = "1.0.160", optional = true }
 
 [dev-dependencies]
 criterion = "0.4.0"
 
-[[bench]]
-name = "positions"
-harness = false
-
-[[bench]]
-name = "model"
-harness = false
+[features]
+serde-serialize = ["dep:serde", "nalgebra/serde-serialize"]
+bitvec = ["dep:bitvec"]

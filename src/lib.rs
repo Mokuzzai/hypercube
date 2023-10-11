@@ -1,20 +1,14 @@
 #![warn(missing_debug_implementations)]
 #![allow(soft_unstable)]
 
+pub mod chunk;
 pub mod math;
-pub mod model;
 pub mod position_map;
-pub mod positions;
 pub mod shape;
 pub mod storage;
-pub mod chunk;
 pub mod world;
 
 pub use position_map::PositionMap;
-
-// pub use world::Multiform;
-// pub use world::Subform;
-// pub use world::Uniform;
 
 pub use shape::ct;
 pub use shape::rt;
@@ -25,9 +19,6 @@ pub use shape::UniformShape;
 // pub use shape::Cow;
 pub(crate) use shape::UniformWorldCoordinate;
 pub(crate) use shape::WorldCoordinate;
-
-pub use positions::OffsetPositions;
-pub use positions::Positions;
 
 pub use chunk::Chunk;
 pub use chunk::ChunkMut;

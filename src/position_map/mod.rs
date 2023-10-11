@@ -11,6 +11,10 @@ use crate::math::Point;
 
 use std::collections::BTreeMap;
 
+#[cfg_attr(
+	feature = "serde-serialize",
+	derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct PositionMap<T, const D: usize> {
 	inner: BTreeMap<OrderedPoint<D>, T>,
 }
@@ -32,6 +36,12 @@ impl<T, const D: usize> PositionMap<T, D> {
 	}
 	pub fn iter_mut(&mut self) -> impl Iterator<Item = (Point<i32, D>, &mut T)> {
 		self.inner.iter_mut().map(|(a, b)| (a.coordinates, b))
+	}
+	pub fn into_iter(self) -> impl Iterator<Item = (Point<i32, D>, T)> {
+		self.inner.into_iter().map(|(a, b)| (a.coordinates, b))
+	}
+	pub fn clear(&mut self) {
+		self.inner.clear()
 	}
 }
 

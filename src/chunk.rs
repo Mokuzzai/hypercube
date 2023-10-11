@@ -4,14 +4,18 @@ use crate::math::Point;
 use crate::shape::Shape;
 use crate::storage::ContiguousMemory;
 use crate::storage::ContiguousMemoryMut;
-use crate::storage::ReadStorage;
 use crate::storage::FromFn;
+use crate::storage::ReadStorage;
 use crate::storage::Storage;
 
 use std::ops::Deref;
 use std::ops::DerefMut;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[cfg_attr(
+	feature = "serde-serialize",
+	derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct Chunk<T: ?Sized, S, const B: usize> {
 	pub shape: S,
 	pub storage: T,
@@ -112,14 +116,18 @@ impl<T: ?Sized + ContiguousMemoryMut, S: Shape<B>, const B: usize> Chunk<T, S, B
 		self.storage.as_mut_slice().iter_mut()
 	}
 	pub fn block_positions_mut(&mut self) -> impl Iterator<Item = (Point<i32, B>, &mut T::Item)> {
-		self.storage.as_mut_slice().iter_mut().enumerate().map(|(index, block)| {
-			(
-				self.shape
-					.index_to_position(index)
-					.unwrap_or_else(lazy_unreachable!()),
-				block,
-			)
-		})
+		self.storage
+			.as_mut_slice()
+			.iter_mut()
+			.enumerate()
+			.map(|(index, block)| {
+				(
+					self.shape
+						.index_to_position(index)
+						.unwrap_or_else(lazy_unreachable!()),
+					block,
+				)
+			})
 	}
 	pub fn block_mut(&mut self, position: Point<i32, B>) -> Option<&mut T::Item> {
 		let index = self.shape.position_to_index(position)?;

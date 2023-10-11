@@ -4,6 +4,11 @@ use std::cmp::Ordering;
 
 #[derive(Clone)]
 #[repr(transparent)]
+#[cfg_attr(
+	feature = "serde-serialize",
+	derive(serde::Serialize, serde::Deserialize)
+)]
+#[cfg_attr(feature = "serde_serialize", serde(transparent))]
 pub struct OrderedPoint<const D: usize> {
 	pub coordinates: math::Point<i32, D>,
 }

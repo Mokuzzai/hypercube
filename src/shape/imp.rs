@@ -5,6 +5,10 @@ pub mod rt {
 	use super::*;
 
 	#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
+	#[cfg_attr(
+		feature = "serde-serialize",
+		derive(serde::Serialize, serde::Deserialize)
+	)]
 	pub struct Uniform<const B: usize> {
 		stride: usize,
 	}
@@ -29,7 +33,12 @@ pub mod rt {
 			self.stride
 		}
 	}
+
 	#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+	#[cfg_attr(
+		feature = "serde-serialize",
+		derive(serde::Serialize, serde::Deserialize)
+	)]
 	pub struct Multiform<const B: usize> {
 		extents: math::Vector<usize, B>,
 	}
@@ -52,6 +61,10 @@ pub mod rt {
 	}
 
 	#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+	#[cfg_attr(
+		feature = "serde-serialize",
+		derive(serde::Serialize, serde::Deserialize)
+	)]
 	pub enum Dynamic<const B: usize> {
 		Uniform(Uniform<B>),
 		Multiform(Multiform<B>),
@@ -92,6 +105,7 @@ pub mod ct {
 			($Shape:ident, [$($N:ident),*; $D:expr]) => {
 				// #[doc = ::std::concat!("[``]($crate::shape): A hyperrectangle with `", stringify!($D), "` dimensions and sides of lengths ", $("`", stringify!($N), "` "),*)]
 				#[derive(Debug, Default, Eq, PartialEq, Copy, Clone, Hash)]
+				#[cfg_attr(feature = "serde-serialize", derive(serde::Serialize, serde::Deserialize))]
 				pub struct $Shape<$(const $N: ::std::primitive::usize),*>;
 
 				impl<$(const $N: ::std::primitive::usize),*> $Shape<$($N),*> {
@@ -115,6 +129,10 @@ pub mod ct {
 	crate::multiform_chunk! { Multiform4, [X, Y, Z, W; 4] }
 
 	#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
+	#[cfg_attr(
+		feature = "serde-serialize",
+		derive(serde::Serialize, serde::Deserialize)
+	)]
 	pub struct Uniform<const S: usize, const D: usize>;
 
 	impl<const S: usize, const B: usize> Uniform<S, B> {
